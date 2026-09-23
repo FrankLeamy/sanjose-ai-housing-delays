@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Permit Correction Helper"
+description = "A mobile-friendly web app that analyzes city permit correction letters, organizes comments by department and status, explains needed fixes, tracks progress, and exports a clear PDF report."
+version = "1.0.0"
+id = "artifacts/permit-correction-helper"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19718
+
+[services.development]
+run = "pnpm --filter @workspace/permit-correction-helper run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/permit-correction-helper", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/permit-correction-helper/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19718"
+BASE_PATH = "/"

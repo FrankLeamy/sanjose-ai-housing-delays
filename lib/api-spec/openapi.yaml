@@ -1,22 +1,19 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Permit Correction Helper API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: permits
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
-      summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +21,146 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /samples:
+    get:
+      operationId: listSamples
+      tags: [permits]
+      responses:
+        "200":
+          description: Sample letters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SampleLetter"
+  /analyze:
+    post:
+      operationId: analyzeLetter
+      tags: [permits]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeInput"
+      responses:
+        "201":
+          description: Analysis complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PermitReport"
+  /reports/{id}:
+    get:
+      operationId: getReport
+      tags: [permits]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Permit report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PermitReport"
+  /reports/{reportId}/items/{itemId}:
+    patch:
+      operationId: updateReportItem
+      tags: [permits]
+      parameters:
+        - in: path
+          name: reportId
+          required: true
+          schema: { type: integer }
+        - in: path
+          name: itemId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProgressUpdate"
+      responses:
+        "200":
+          description: Updated item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportItem"
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [permits]
+      responses:
+        "200":
+          description: Notification history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
 components:
   schemas:
     HealthStatus:
       type: object
       properties:
-        status:
-          type: string
-      required:
-        - status
-
+        status: { type: string }
+      required: [status]
+    SampleLetter:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+      required: [id, title, description]
+    AnalyzeInput:
+      type: object
+      properties:
+        fileName: { type: string }
+        mimeType: { type: string }
+        fileData: { type: string, description: Base64 encoded file }
+        sampleId: { type: string }
+      additionalProperties: false
+    PermitReport:
+      type: object
+      properties:
+        id: { type: integer }
+        address: { type: string }
+        summary: { type: string }
+        createdAt: { type: string, format: date-time }
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportItem"
+      required: [id, address, summary, createdAt, items]
+    ReportItem:
+      type: object
+      properties:
+        id: { type: integer }
+        comment: { type: string }
+        status: { type: string, enum: [met, needs_fix] }
+        howToFix: { type: string }
+        department: { type: string }
+        category: { type: string }
+        unclear: { type: boolean }
+        completed: { type: boolean }
+      required: [id, comment, status, howToFix, department, category, unclear, completed]
+    ProgressUpdate:
+      type: object
+      properties:
+        completed: { type: boolean }
+      required: [completed]
+    Notification:
+      type: object
+      properties:
+        id: { type: integer }
+        message: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, message, createdAt]
