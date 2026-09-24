@@ -97,3 +97,34 @@ export const ListNotificationsResponseItem = zod.object({
 export const ListNotificationsResponse = zod.array(ListNotificationsResponseItem)
 
 
+/**
+ * @summary List saved permitting questions, newest first
+ */
+export const ListPermitQuestionsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "question": zod.string(),
+  "response": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListPermitQuestionsResponse = zod.array(ListPermitQuestionsResponseItem)
+
+
+/**
+ * @summary Generate an answer and save the question and answer
+ */
+export const askPermitQuestionBodyQuestionMax = 5000;
+
+
+
+export const AskPermitQuestionBody = zod.object({
+  "question": zod.string().min(1).max(askPermitQuestionBodyQuestionMax)
+})
+
+export const AskPermitQuestionResponse = zod.object({
+  "id": zod.number().int(),
+  "question": zod.string(),
+  "response": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+

@@ -12,6 +12,7 @@ import {
 } from 'wouter';
 
 import HomePage from '@/pages/home';
+import HistoryPage from '@/pages/history';
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/" component={HomePage} />
+        <Route path="/history" component={HistoryPage} />
         <Route component={NotFound} />
       </Switch>
     </RoutedErrorBoundary>

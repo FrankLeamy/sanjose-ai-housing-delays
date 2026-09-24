@@ -1,0 +1,1 @@
+- [Permit assistant AI provider](permit-assistant-ai-provider.md) — the user chose their own OpenAI key after managed setup required phone verification.
