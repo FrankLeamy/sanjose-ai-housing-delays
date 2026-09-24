@@ -13,6 +13,7 @@ import {
   Check,
   ChevronRight,
   ShieldAlert,
+  LogOut,
 } from "lucide-react";
 import { 
   useListSamples,
@@ -20,7 +21,10 @@ import {
   useGetReport,
   useUpdateReportItem,
   useListNotifications,
+  useLogOut,
   getGetReportQueryKey,
+  getListReportsQueryKey,
+  getListNotificationsQueryKey,
   ReportItem
 } from "@workspace/api-client-react";
 
@@ -60,7 +64,18 @@ export default function Home() {
 export function TopNav() {
   const { data: notifications } = useListNotifications();
   const unreadCount = notifications?.length || 0;
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const logout = useLogOut();
+
+  const handleLogout = () => {
+    logout.mutate(undefined, {
+      onSuccess: () => {
+        queryClient.clear();
+        setLocation("/login");
+      },
+    });
+  };
 
   return (
     <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10 no-print">
@@ -68,17 +83,20 @@ export function TopNav() {
         <Link href="/" className="flex items-center gap-2 text-primary">
           <ShieldAlert className="w-6 h-6" />
           <h1 className="font-serif font-semibold text-lg md:text-xl tracking-tight">
-            <span className="sm:hidden">Permit Helper</span>
+            <span className="sm:hidden">Permit</span>
             <span className="hidden sm:inline">Permit Correction Helper</span>
           </h1>
         </Link>
 
         <nav className="flex items-center gap-1 sm:gap-3" aria-label="Main navigation">
-          <Link href="/" aria-current={location === "/" ? "page" : undefined} className={`px-2 py-2 text-sm rounded-md transition-colors ${location === "/" ? "text-primary font-semibold bg-primary/5" : "text-muted-foreground hover:text-foreground"}`}>
+          <Link href="/" aria-current={location === "/" ? "page" : undefined} className={`hidden sm:inline-flex px-2 py-2 text-sm rounded-md transition-colors ${location === "/" ? "text-primary font-semibold bg-primary/5" : "text-muted-foreground hover:text-foreground"}`}>
             Home
           </Link>
           <Link href="/history" aria-current={location === "/history" ? "page" : undefined} className={`px-2 py-2 text-sm rounded-md transition-colors ${location === "/history" ? "text-primary font-semibold bg-primary/5" : "text-muted-foreground hover:text-foreground"}`}>
             History
+          </Link>
+          <Link href="/reports" aria-current={location.startsWith("/reports") ? "page" : undefined} className={`px-2 py-2 text-sm rounded-md transition-colors ${location.startsWith("/reports") ? "text-primary font-semibold bg-primary/5" : "text-muted-foreground hover:text-foreground"}`}>
+            <span className="sm:hidden">Reports</span><span className="hidden sm:inline">Past Reports</span>
           </Link>
         <Popover>
           <PopoverTrigger asChild>
@@ -111,6 +129,10 @@ export function TopNav() {
             </div>
           </PopoverContent>
         </Popover>
+          <Button variant="ghost" size="sm" onClick={handleLogout} disabled={logout.isPending} aria-label="Log out" className="text-muted-foreground hover:text-foreground px-2">
+            <LogOut className="w-4 h-4" />
+            <span className="hidden md:inline ml-1">Log Out</span>
+          </Button>
         </nav>
       </div>
     </header>
@@ -125,6 +147,13 @@ function UploadFlow({ onReportGenerated }: { onReportGenerated: (id: number) => 
 
   const { data: samples, isLoading: loadingSamples } = useListSamples();
   const analyze = useAnalyzeLetter();
+  const queryClient = useQueryClient();
+
+  const reportSaved = (id: number) => {
+    queryClient.invalidateQueries({ queryKey: getListReportsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
+    onReportGenerated(id);
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -172,7 +201,7 @@ function UploadFlow({ onReportGenerated }: { onReportGenerated: (id: number) => 
           fileData: base64
         }
       }, {
-        onSuccess: (data: any) => onReportGenerated(data.id),
+        onSuccess: (data: any) => reportSaved(data.id),
         onSettled: () => setIsProcessing(false)
       });
     } catch (e) {
@@ -185,7 +214,7 @@ function UploadFlow({ onReportGenerated }: { onReportGenerated: (id: number) => 
     analyze.mutate({
       data: { sampleId }
     }, {
-      onSuccess: (data: any) => onReportGenerated(data.id),
+      onSuccess: (data: any) => reportSaved(data.id),
       onSettled: () => setIsProcessing(false)
     });
   };

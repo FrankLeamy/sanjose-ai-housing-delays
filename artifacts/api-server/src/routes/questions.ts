@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import OpenAI from "openai";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db, permitQuestionsTable } from "@workspace/db";
 import {
   AskPermitQuestionBody,
@@ -10,10 +10,11 @@ import {
 
 const router: IRouter = Router();
 
-router.get("/questions", async (_req, res): Promise<void> => {
+router.get("/questions", async (req, res): Promise<void> => {
   const questions = await db
     .select()
     .from(permitQuestionsTable)
+    .where(eq(permitQuestionsTable.userId, req.session.userId!))
     .orderBy(desc(permitQuestionsTable.createdAt), desc(permitQuestionsTable.id));
   res.json(ListPermitQuestionsResponse.parse(questions));
 });
@@ -57,7 +58,7 @@ router.post("/questions", async (req, res): Promise<void> => {
 
   const [record] = await db
     .insert(permitQuestionsTable)
-    .values({ question, response: answer })
+    .values({ userId: req.session.userId!, question, response: answer })
     .returning();
   res.status(201).json(AskPermitQuestionResponse.parse(record));
 });

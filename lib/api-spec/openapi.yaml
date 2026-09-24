@@ -10,6 +10,7 @@ tags:
   - name: health
   - name: permits
   - name: questions
+  - name: auth
 paths:
   /healthz:
     get:
@@ -22,6 +23,60 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /signup:
+    post:
+      operationId: signUp
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthInput"
+      responses:
+        "201":
+          description: Account created and session started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+  /login:
+    post:
+      operationId: logIn
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthInput"
+      responses:
+        "200":
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+  /logout:
+    post:
+      operationId: logOut
+      tags: [auth]
+      responses:
+        "204":
+          description: Session ended
+  /me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      responses:
+        "200":
+          description: Current user, or null if not logged in
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/AuthUser"
+                  - type: "null"
   /samples:
     get:
       operationId: listSamples
@@ -68,6 +123,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PermitReport"
+  /reports:
+    get:
+      operationId: listReports
+      tags: [permits]
+      responses:
+        "200":
+          description: Reports belonging to the current user, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PermitReport"
   /reports/{reportId}/items/{itemId}:
     patch:
       operationId: updateReportItem
@@ -140,6 +208,20 @@ paths:
                 $ref: "#/components/schemas/PermitQuestion"
 components:
   schemas:
+    AuthInput:
+      type: object
+      properties:
+        username: { type: string, minLength: 3, maxLength: 30, pattern: "^[a-zA-Z0-9_]+$" }
+        password: { type: string, minLength: 8, maxLength: 128 }
+      required: [username, password]
+      additionalProperties: false
+    AuthUser:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, username, createdAt]
     HealthStatus:
       type: object
       properties:

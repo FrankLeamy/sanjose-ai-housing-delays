@@ -1,4 +1,6 @@
 import { Router, type IRouter } from "express";
+import { and, desc, eq } from "drizzle-orm";
+import { db, notificationsTable, reportsTable } from "@workspace/db";
 import {
   AnalyzeLetterBody,
   AnalyzeLetterResponse,
@@ -6,6 +8,7 @@ import {
   GetReportResponse,
   ListNotificationsResponse,
   ListSamplesResponse,
+  ListReportsResponse,
   UpdateReportItemBody,
   UpdateReportItemParams,
   UpdateReportItemResponse,
@@ -31,9 +34,6 @@ type Report = {
 };
 
 const router: IRouter = Router();
-const reports = new Map<number, Report>();
-const notifications: Array<{ id: number; message: string; createdAt: string }> = [];
-let nextReportId = 1;
 
 const samples = [
   {
@@ -48,8 +48,7 @@ const samples = [
   },
 ];
 
-function buildReport(needsFixes: boolean): Report {
-  const id = nextReportId++;
+function buildReport(needsFixes: boolean, id: number): Report {
   const items: Item[] = [
     {
       id: id * 100 + 1,
@@ -130,7 +129,7 @@ router.get("/samples", (_req, res): void => {
   res.json(ListSamplesResponse.parse(samples));
 });
 
-router.post("/analyze", (req, res): void => {
+router.post("/analyze", async (req, res): Promise<void> => {
   const input = AnalyzeLetterBody.safeParse(req.body);
   if (!input.success) {
     res.status(400).json({ error: "Please choose a supported letter or sample." });
@@ -144,25 +143,52 @@ router.post("/analyze", (req, res): void => {
   const needsFixes =
     input.data.sampleId === "needs-fixes" ||
     (input.data.fileName?.toLowerCase().includes("fix") ?? false);
-  const report = buildReport(needsFixes);
-  reports.set(report.id, report);
-  notifications.unshift({
-    id: notifications.length + 1,
-    message: needsFixes
-      ? "Your submission needs changes. See the items below."
-      : "Good news! Your submission appears complete.",
-    createdAt: new Date().toISOString(),
+  const draft = buildReport(needsFixes, 0);
+  const report = await db.transaction(async (tx) => {
+    const [created] = await tx
+      .insert(reportsTable)
+      .values({
+        userId: req.session.userId!,
+        address: draft.address,
+        summary: draft.summary,
+        items: [],
+      })
+      .returning();
+    const [saved] = await tx
+      .update(reportsTable)
+      .set({ items: buildReport(needsFixes, created.id).items })
+      .where(eq(reportsTable.id, created.id))
+      .returning();
+    await tx.insert(notificationsTable).values({
+      userId: req.session.userId!,
+      message: needsFixes
+        ? "Your submission needs changes. See the items below."
+        : "Good news! Your submission appears complete.",
+    });
+    return saved;
   });
   res.status(201).json(AnalyzeLetterResponse.parse(report));
 });
 
-router.get("/reports/:id", (req, res): void => {
+router.get("/reports", async (req, res): Promise<void> => {
+  const reports = await db
+    .select()
+    .from(reportsTable)
+    .where(eq(reportsTable.userId, req.session.userId!))
+    .orderBy(desc(reportsTable.createdAt), desc(reportsTable.id));
+  res.json(ListReportsResponse.parse(reports));
+});
+
+router.get("/reports/:id", async (req, res): Promise<void> => {
   const params = GetReportParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: "Invalid report." });
     return;
   }
-  const report = reports.get(params.data.id);
+  const [report] = await db
+    .select()
+    .from(reportsTable)
+    .where(and(eq(reportsTable.id, params.data.id), eq(reportsTable.userId, req.session.userId!)));
   if (!report) {
     res.status(404).json({ error: "Report not found." });
     return;
@@ -170,24 +196,38 @@ router.get("/reports/:id", (req, res): void => {
   res.json(GetReportResponse.parse(report));
 });
 
-router.patch("/reports/:reportId/items/:itemId", (req, res): void => {
+router.patch("/reports/:reportId/items/:itemId", async (req, res): Promise<void> => {
   const params = UpdateReportItemParams.safeParse(req.params);
   const body = UpdateReportItemBody.safeParse(req.body);
   if (!params.success || !body.success) {
     res.status(400).json({ error: "Invalid progress update." });
     return;
   }
-  const report = reports.get(params.data.reportId);
+  const [report] = await db
+    .select()
+    .from(reportsTable)
+    .where(and(eq(reportsTable.id, params.data.reportId), eq(reportsTable.userId, req.session.userId!)));
   const item = report?.items.find((candidate) => candidate.id === params.data.itemId);
   if (!item) {
     res.status(404).json({ error: "Checklist item not found." });
     return;
   }
-  item.completed = body.data.completed;
-  res.json(UpdateReportItemResponse.parse(item));
+  const items = report.items.map((candidate) =>
+    candidate.id === item.id ? { ...candidate, completed: body.data.completed } : candidate,
+  );
+  await db
+    .update(reportsTable)
+    .set({ items })
+    .where(and(eq(reportsTable.id, report.id), eq(reportsTable.userId, req.session.userId!)));
+  res.json(UpdateReportItemResponse.parse({ ...item, completed: body.data.completed }));
 });
 
-router.get("/notifications", (_req, res): void => {
+router.get("/notifications", async (req, res): Promise<void> => {
+  const notifications = await db
+    .select()
+    .from(notificationsTable)
+    .where(eq(notificationsTable.userId, req.session.userId!))
+    .orderBy(desc(notificationsTable.createdAt), desc(notificationsTable.id));
   res.json(ListNotificationsResponse.parse(notifications));
 });
 

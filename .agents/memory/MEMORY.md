@@ -1,1 +1,2 @@
 - [Permit assistant AI provider](permit-assistant-ai-provider.md) — the user chose their own OpenAI key after managed setup required phone verification.
+- [Legacy question ownership](legacy-question-ownership.md) — pre-account questions cannot be safely attributed to a new user.

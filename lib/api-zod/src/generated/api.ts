@@ -13,6 +13,60 @@ export const HealthCheckResponse = zod.object({
 })
 
 
+export const signUpBodyUsernameMin = 3;
+export const signUpBodyUsernameMax = 30;
+
+
+export const signUpBodyUsernameRegExp = new RegExp('^[a-zA-Z0-9_]+$');
+export const signUpBodyPasswordMin = 8;
+export const signUpBodyPasswordMax = 128;
+
+
+
+export const SignUpBody = zod.object({
+  "username": zod.string().min(signUpBodyUsernameMin).max(signUpBodyUsernameMax).regex(signUpBodyUsernameRegExp),
+  "password": zod.string().min(signUpBodyPasswordMin).max(signUpBodyPasswordMax)
+})
+
+export const SignUpResponse = zod.object({
+  "id": zod.number().int(),
+  "username": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const logInBodyUsernameMin = 3;
+export const logInBodyUsernameMax = 30;
+
+
+export const logInBodyUsernameRegExp = new RegExp('^[a-zA-Z0-9_]+$');
+export const logInBodyPasswordMin = 8;
+export const logInBodyPasswordMax = 128;
+
+
+
+export const LogInBody = zod.object({
+  "username": zod.string().min(logInBodyUsernameMin).max(logInBodyUsernameMax).regex(logInBodyUsernameRegExp),
+  "password": zod.string().min(logInBodyPasswordMin).max(logInBodyPasswordMax)
+})
+
+export const LogInResponse = zod.object({
+  "id": zod.number().int(),
+  "username": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const LogOutResponse = zod.void()
+
+
+export const GetMeResponse = zod.union([zod.object({
+  "id": zod.number().int(),
+  "username": zod.string(),
+  "createdAt": zod.coerce.date()
+}),zod.null()])
+
+
 export const ListSamplesResponseItem = zod.object({
   "id": zod.string(),
   "title": zod.string(),
@@ -66,6 +120,25 @@ export const GetReportResponse = zod.object({
   "completed": zod.boolean()
 }))
 })
+
+
+export const ListReportsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "address": zod.string(),
+  "summary": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "items": zod.array(zod.object({
+  "id": zod.number().int(),
+  "comment": zod.string(),
+  "status": zod.enum(['met', 'needs_fix']),
+  "howToFix": zod.string(),
+  "department": zod.string(),
+  "category": zod.string(),
+  "unclear": zod.boolean(),
+  "completed": zod.boolean()
+}))
+})
+export const ListReportsResponse = zod.array(ListReportsResponseItem)
 
 
 export const UpdateReportItemParams = zod.object({

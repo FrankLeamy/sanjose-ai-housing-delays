@@ -5,25 +5,56 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import {
+  Redirect,
   Route,
   Switch,
   useLocation,
   Router as WouterRouter,
 } from 'wouter';
+import { getGetMeQueryKey, useGetMe } from '@workspace/api-client-react';
+import { Button } from '@/components/ui/button';
 
 import HomePage from '@/pages/home';
 import HistoryPage from '@/pages/history';
+import LoginPage from '@/pages/login';
+import SignUpPage from '@/pages/signup';
+import PastReportsPage from '@/pages/past-reports';
+import ReportDetailPage from '@/pages/report-detail';
 
 const queryClient = new QueryClient();
 
 function Router() {
+  const [location] = useLocation();
+  const { data: user, isLoading, isError, refetch } = useGetMe({
+    query: { queryKey: getGetMeQueryKey(), retry: false },
+  });
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+  }
+  if (isError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-center p-6">
+        <p>Unable to check your session. Please try again.</p>
+        <Button variant="outline" onClick={() => refetch()}>Retry</Button>
+      </div>
+    );
+  }
+  const authPage = location === '/login' || location === '/signup';
+  if (!user && !authPage) return <Redirect to="/login" />;
+  if (user && authPage) return <Redirect to="/" />;
+
   return (
     // Keep a shared shell (sidebar, navbar) outside the boundary so it
     // survives a page crash.
     <RoutedErrorBoundary>
       <Switch>
+        <Route path="/login" component={LoginPage} />
+        <Route path="/signup" component={SignUpPage} />
         <Route path="/" component={HomePage} />
         <Route path="/history" component={HistoryPage} />
+        <Route path="/reports" component={PastReportsPage} />
+        <Route path="/reports/:id" component={ReportDetailPage} />
         <Route component={NotFound} />
       </Switch>
     </RoutedErrorBoundary>

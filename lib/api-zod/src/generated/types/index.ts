@@ -7,6 +7,8 @@
  */
 
 export * from './analyzeInput';
+export * from './authInput';
+export * from './authUser';
 export * from './healthStatus';
 export * from './notification';
 export * from './permitQuestion';
