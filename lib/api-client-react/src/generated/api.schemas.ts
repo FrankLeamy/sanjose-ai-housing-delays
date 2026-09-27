@@ -70,6 +70,21 @@ export interface PermitReport {
   items: ReportItem[];
 }
 
+export interface PublicPermit {
+  permitNumber: string;
+  address: string;
+  housingType: string;
+  projectDescription: string;
+  permitType: string;
+  status: string;
+  issuedDate: string | null;
+  finalDate: string | null;
+  permitApprovals: string | null;
+  sourceUrl: string;
+  source: string;
+  dataLabel: string;
+}
+
 export interface ProgressUpdate {
   completed: boolean;
 }

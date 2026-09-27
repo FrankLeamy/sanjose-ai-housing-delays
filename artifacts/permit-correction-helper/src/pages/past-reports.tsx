@@ -2,11 +2,10 @@ import { useEffect } from "react";
 import { format } from "date-fns";
 import { ArrowRight, CalendarDays, ChevronRight, FileText, FolderOpen, RefreshCw } from "lucide-react";
 import { Link } from "wouter";
-import { useListReports } from "@workspace/api-client-react";
+import { useListPublicPermits, useListReports } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TopNav } from "@/pages/home";
-import { sanJosePermits } from "@/data/san-jose-permits";
 
 function readableDate(date: string) {
   const parsed = new Date(date);
@@ -15,6 +14,7 @@ function readableDate(date: string) {
 
 export default function PastReportsPage() {
   const { data: reports, isLoading, isError, refetch, isFetching } = useListReports();
+  const { data: publicPermits, isError: publicPermitsError } = useListPublicPermits();
   const sortedReports = reports ? [...reports].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) : [];
 
   useEffect(() => {
@@ -110,7 +110,7 @@ export default function PastReportsPage() {
         <section aria-label="City of San José residential permits" className="mt-14 border-t border-border pt-9">
           <div className="mb-6">
             <p className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-              City of San José open data · {sanJosePermits.length} records
+              City of San José open data · {publicPermits ? `${publicPermits.length} records` : "Loading records"}
             </p>
             <h2 className="mt-2 font-serif text-2xl font-semibold">Residential permit records</h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
@@ -120,13 +120,14 @@ export default function PastReportsPage() {
             </p>
           </div>
           <div className="space-y-3">
-            {sanJosePermits.map((permit) => (
+            {publicPermitsError && <p className="text-sm text-muted-foreground">Public records are unavailable right now. Please try again later.</p>}
+            {publicPermits?.map((permit) => (
               <article key={permit.permitNumber} className="rounded-lg border border-card-border bg-card p-5 sm:p-6">
                 <p className="text-xs text-muted-foreground">{permit.permitNumber} · {permit.housingType}</p>
                 <h3 className="mt-2 font-serif text-xl font-semibold">{permit.address}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{permit.projectDescription}</p>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  {permit.permitType} · Status at publication: {permit.status} · Issued: {permit.issuedDate}
+                  {permit.permitType} · Status at publication: {permit.status} · Issued: {permit.issuedDate ?? "Not available"}
                 </p>
                 <a href={permit.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-primary underline-offset-4 hover:underline">
                   View official City record for {permit.permitNumber}

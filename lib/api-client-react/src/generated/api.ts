@@ -29,6 +29,7 @@ import type {
   PermitQuestionInput,
   PermitReport,
   ProgressUpdate,
+  PublicPermit,
   ReportItem,
   SampleLetter
 } from './api.schemas';
@@ -717,6 +718,77 @@ export function useListReports<TData = Awaited<ReturnType<typeof listReports>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListReportsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListPublicPermitsUrl = () => {
+
+
+
+
+  return `/api/public-permits`
+}
+
+export const listPublicPermits = async ( options?: Parameters<typeof customFetch>[1]): Promise<PublicPermit[]> => {
+
+  return customFetch<PublicPermit[]>(getListPublicPermitsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPublicPermitsQueryKey = () => {
+    return [
+    `/api/public-permits`
+    ] as const;
+    }
+
+
+export const getListPublicPermitsQueryOptions = <TData = Awaited<ReturnType<typeof listPublicPermits>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPublicPermits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPublicPermitsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPublicPermits>>> = ({ signal }) => listPublicPermits({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPublicPermits>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPublicPermitsQueryResult = NonNullable<Awaited<ReturnType<typeof listPublicPermits>>>
+export type ListPublicPermitsQueryError = ErrorType<unknown>
+
+
+
+export function useListPublicPermits<TData = Awaited<ReturnType<typeof listPublicPermits>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPublicPermits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPublicPermitsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -136,6 +136,19 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PermitReport"
+  /public-permits:
+    get:
+      operationId: listPublicPermits
+      tags: [permits]
+      responses:
+        "200":
+          description: Housing-related records imported from the official City dataset
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PublicPermit"
   /reports/{reportId}/items/{itemId}:
     patch:
       operationId: updateReportItem
@@ -254,6 +267,31 @@ components:
           items:
             $ref: "#/components/schemas/ReportItem"
       required: [id, address, summary, createdAt, items]
+    PublicPermit:
+      type: object
+      properties:
+        permitNumber: { type: string }
+        address: { type: string }
+        housingType: { type: string }
+        projectDescription: { type: string }
+        permitType: { type: string }
+        status: { type: string }
+        issuedDate:
+          oneOf:
+            - { type: string, format: date }
+            - { type: "null" }
+        finalDate:
+          oneOf:
+            - { type: string, format: date }
+            - { type: "null" }
+        permitApprovals:
+          oneOf:
+            - { type: string }
+            - { type: "null" }
+        sourceUrl: { type: string, format: uri }
+        source: { type: string }
+        dataLabel: { type: string }
+      required: [permitNumber, address, housingType, projectDescription, permitType, status, issuedDate, finalDate, permitApprovals, sourceUrl, source, dataLabel]
     ReportItem:
       type: object
       properties:

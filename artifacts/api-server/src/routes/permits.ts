@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq } from "drizzle-orm";
-import { db, notificationsTable, reportsTable } from "@workspace/db";
+import { and, asc, desc, eq } from "drizzle-orm";
+import { db, notificationsTable, publicPermitsTable, reportsTable } from "@workspace/db";
 import {
   AnalyzeLetterBody,
   AnalyzeLetterResponse,
@@ -9,6 +9,7 @@ import {
   ListNotificationsResponse,
   ListSamplesResponse,
   ListReportsResponse,
+  ListPublicPermitsResponse,
   UpdateReportItemBody,
   UpdateReportItemParams,
   UpdateReportItemResponse,
@@ -177,6 +178,27 @@ router.get("/reports", async (req, res): Promise<void> => {
     .where(eq(reportsTable.userId, req.session.userId!))
     .orderBy(desc(reportsTable.createdAt), desc(reportsTable.id));
   res.json(ListReportsResponse.parse(reports));
+});
+
+router.get("/public-permits", async (_req, res): Promise<void> => {
+  const permits = await db
+    .select({
+      permitNumber: publicPermitsTable.permitNumber,
+      address: publicPermitsTable.address,
+      housingType: publicPermitsTable.housingType,
+      projectDescription: publicPermitsTable.projectDescription,
+      permitType: publicPermitsTable.permitType,
+      status: publicPermitsTable.status,
+      issuedDate: publicPermitsTable.issuedDate,
+      finalDate: publicPermitsTable.finalDate,
+      permitApprovals: publicPermitsTable.permitApprovals,
+      sourceUrl: publicPermitsTable.sourceUrl,
+      source: publicPermitsTable.source,
+      dataLabel: publicPermitsTable.dataLabel,
+    })
+    .from(publicPermitsTable)
+    .orderBy(asc(publicPermitsTable.displayOrder));
+  res.json(ListPublicPermitsResponse.parse(permits));
 });
 
 router.get("/reports/:id", async (req, res): Promise<void> => {

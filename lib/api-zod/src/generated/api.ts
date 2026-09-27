@@ -141,6 +141,23 @@ export const ListReportsResponseItem = zod.object({
 export const ListReportsResponse = zod.array(ListReportsResponseItem)
 
 
+export const ListPublicPermitsResponseItem = zod.object({
+  "permitNumber": zod.string(),
+  "address": zod.string(),
+  "housingType": zod.string(),
+  "projectDescription": zod.string(),
+  "permitType": zod.string(),
+  "status": zod.string(),
+  "issuedDate": zod.union([zod.coerce.date(),zod.null()]),
+  "finalDate": zod.union([zod.coerce.date(),zod.null()]),
+  "permitApprovals": zod.union([zod.string(),zod.null()]),
+  "sourceUrl": zod.string().url(),
+  "source": zod.string(),
+  "dataLabel": zod.string()
+})
+export const ListPublicPermitsResponse = zod.array(ListPublicPermitsResponseItem)
+
+
 export const UpdateReportItemParams = zod.object({
   "reportId": zod.coerce.number().int(),
   "itemId": zod.coerce.number().int()
