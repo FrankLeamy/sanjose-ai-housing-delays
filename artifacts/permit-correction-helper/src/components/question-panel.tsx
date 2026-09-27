@@ -12,17 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 
-const exampleQuestions = [
-  "What is the status of permit number [permit number]?",
-  "Are there any ADU permits in the database?",
-  "Show me residential permits that are still under review.",
-  "What type of housing project is at [address]?",
-  "Which permits have correction information?",
-  "What information is missing from this permit record?",
-  "Show me permits for multifamily housing.",
-  "What documents are connected to this permit?",
-];
-
 export default function QuestionPanel() {
   const [question, setQuestion] = useState("");
   const [saved, setSaved] = useState<PermitQuestion | null>(null);
@@ -64,7 +53,6 @@ export default function QuestionPanel() {
           </label>
           <Textarea
             id="permit-question"
-            data-testid="input-permit-question"
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             maxLength={5000}
@@ -72,28 +60,11 @@ export default function QuestionPanel() {
             className="min-h-28 resize-y bg-background"
             disabled={ask.isPending}
           />
-          <div role="group" aria-label="Example questions" className="space-y-1">
-            <p className="text-xs text-muted-foreground">Try a question (replace bracketed details where needed):</p>
-            <div className="flex flex-wrap gap-x-4 gap-y-1">
-              {exampleQuestions.map((example, index) => (
-                <button
-                  key={example}
-                  type="button"
-                  data-testid={`button-example-question-${index + 1}`}
-                  className="text-left text-xs text-primary underline-offset-4 hover:underline focus-visible:underline"
-                  onClick={() => { setQuestion(example); setSaved(null); }}
-                  disabled={ask.isPending}
-                >
-                  {example}
-                </button>
-              ))}
-            </div>
-          </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="text-xs text-muted-foreground">
               Answers are guidance only, not permit approval.
             </span>
-            <Button type="submit" data-testid="button-ask-permit-question" disabled={!question.trim() || ask.isPending} className="gap-2">
+            <Button type="submit" disabled={!question.trim() || ask.isPending} className="gap-2">
               <Sparkles className="w-4 h-4" />
               {ask.isPending ? "Generating answer..." : "Ask question"}
             </Button>
@@ -115,7 +86,7 @@ export default function QuestionPanel() {
               </time>
             </div>
             <p className="font-medium whitespace-pre-wrap break-words">{saved.question}</p>
-            <p data-testid="text-permit-answer" className="text-sm leading-relaxed whitespace-pre-wrap break-words">{saved.response}</p>
+            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{saved.response}</p>
             <Link href="/history" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
               View in History <ArrowRight className="w-4 h-4" />
             </Link>
