@@ -1,12 +1,13 @@
 import { Router, type IRouter } from "express";
 import OpenAI from "openai";
-import { desc, eq } from "drizzle-orm";
-import { db, permitQuestionsTable } from "@workspace/db";
+import { asc, desc, eq } from "drizzle-orm";
+import { db, permitQuestionsTable, publicPermitsTable } from "@workspace/db";
 import {
   AskPermitQuestionBody,
   AskPermitQuestionResponse,
   ListPermitQuestionsResponse,
 } from "@workspace/api-zod";
+import { answerFromPublicPermits, questionIntents, type QuestionIntent } from "../lib/public-permit-answers";
 
 const router: IRouter = Router();
 
@@ -34,6 +35,7 @@ router.post("/questions", async (req, res): Promise<void> => {
 
   let answer: string;
   try {
+    const records = await db.select().from(publicPermitsTable).orderBy(asc(publicPermitsTable.displayOrder));
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const completion = await openai.chat.completions.create({
       model: "gpt-5-mini",
@@ -41,15 +43,16 @@ router.post("/questions", async (req, res): Promise<void> => {
         {
           role: "system",
           content:
-            "You are a permitting assistance guide. Give useful, plain-language guidance about building permits and city correction requests. Explain likely next steps and what information to confirm with the relevant city department. Do not claim to approve a permit, invent jurisdiction-specific rules, or present uncertain requirements as certain. If the question is ambiguous, say what details are needed. Keep the answer clear and practical.",
+            `Classify a question about a database of City of San José residential permits. Reply with exactly ONE of these intent words and nothing else: ${questionIntents.join(", ")}. Use status for a permit-number status question, adu for ADUs, review for under-review statuses, address for a project at an address, corrections for correction information, missing for missing fields, multifamily for apartments/townhouses, documents for attached documents, lookup for other record searches, and other when the question cannot be answered from permit records. Do not provide any permit facts.`,
         },
         { role: "user", content: question },
       ],
     });
-    answer = completion.choices[0]?.message?.content?.trim() ?? "";
-    if (!answer) {
-      throw new Error("AI returned an empty response");
+    const intent = completion.choices[0]?.message?.content?.trim().toLowerCase() ?? "";
+    if (!questionIntents.includes(intent as QuestionIntent)) {
+      throw new Error("AI returned an invalid question classification");
     }
+    answer = answerFromPublicPermits(question, intent as QuestionIntent, records);
   } catch (error) {
     req.log.error({ error }, "Could not generate permitting answer");
     res.status(502).json({ error: "Unable to generate an answer right now. Please try again." });
