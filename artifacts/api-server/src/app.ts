@@ -6,6 +6,7 @@ import connectPgSimple from "connect-pg-simple";
 import { pool } from "@workspace/db";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { apiErrorHandler } from "./middlewares/api-error-handler";
 
 const app: Express = express();
 const sessionSecret = process.env.SESSION_SECRET;
@@ -59,5 +60,6 @@ app.use(
 );
 
 app.use("/api", router);
+app.use(apiErrorHandler);
 
 export default app;
