@@ -1,8 +1,9 @@
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { open, unlink } from "node:fs/promises";
 import pg from "pg";
 import bcrypt from "bcrypt";
 import { backfillSubmissions } from "./backfill-submissions.mjs";
+import { generateDemoPasswords } from "./demo-passwords.mjs";
 
 // Never run on application startup or in a published deployment.
 if (process.env.NODE_ENV !== "development" || !process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DEPLOYMENT) {
@@ -15,6 +16,7 @@ if (!destination?.startsWith("/tmp/") || destination.includes("/../")) {
   throw new Error("Temporary credentials must be stored outside the workspace, in /tmp.");
 }
 const named = args.includes("--named");
+const generatePasswords = generateDemoPasswords(3);
 const credentials = (named ? [
   { label: "City Staff Reviewer", username: "city_staff_reviewer", displayName: "City Staff Reviewer", email: "staff@example.com", role: "city_staff_admin" },
   { label: "Alex Resident (Resident 1)", username: "resident1", displayName: "Alex Resident", email: "resident1@example.com", role: "resident" },
@@ -23,7 +25,7 @@ const credentials = (named ? [
   { label: "City Staff administrator", username: "demo_city_staff", role: "city_staff_admin" },
   { label: "Resident A", username: "demo_resident_a", role: "resident" },
   { label: "Resident B", username: "demo_resident_b", role: "resident" },
-]).map((account) => ({ ...account, password: randomBytes(24).toString("base64url") }));
+]).map((account, index) => ({ ...account, password: generatePasswords[index] }));
 const file = await open(destination, "wx", 0o600);
 const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
 let committed = false;

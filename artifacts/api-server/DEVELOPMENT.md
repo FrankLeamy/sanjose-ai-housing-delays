@@ -99,6 +99,23 @@ For permission tests:
 
 No passwords are included in these instructions or public responses.
 
+### Short demo-password resets
+
+Reset **only** the existing City Staff, Resident 1, and Resident B demo passwords:
+
+```sh
+pnpm --filter @workspace/api-server run reset:demo-passwords --show-passwords
+```
+
+This development-only command generates a separate random **12-character**
+password for each account, using lowercase letters and digits with easily confused
+characters omitted. These meet the existing 8–128-character authentication policy.
+The password policy for real users is not changed. Passwords remain bcrypt-hashed
+with cost 12, and are displayed only in the development terminal when explicitly
+requested. Temporary credentials are stored outside the project with owner-only
+permissions. No roles, profile fields, submissions, notes, permit records, or
+non-demo accounts are changed. Rerunning resets these three passwords again.
+
 After applying the additive database schema in the intended environment, run:
 
 ```sh
