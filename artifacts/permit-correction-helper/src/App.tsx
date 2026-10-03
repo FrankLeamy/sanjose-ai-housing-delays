@@ -20,6 +20,12 @@ import LoginPage from '@/pages/login';
 import SignUpPage from '@/pages/signup';
 import PastReportsPage from '@/pages/past-reports';
 import ReportDetailPage from '@/pages/report-detail';
+import SubmissionsPage from '@/pages/submissions';
+import SubmissionDetailPage from '@/pages/submission-detail';
+import StaffPage from '@/pages/staff';
+import StaffDetailPage from '@/pages/staff-detail';
+import StaffAccountsPage from '@/pages/staff-accounts';
+import { Unauthorized } from '@/components/submission-ui';
 
 const queryClient = new QueryClient();
 
@@ -42,7 +48,10 @@ function Router() {
   }
   const authPage = location === '/login' || location === '/signup';
   if (!user && !authPage) return <Redirect to="/login" />;
-  if (user && authPage) return <Redirect to="/" />;
+  const isStaff = user?.role === 'city_staff_admin';
+  if (user && authPage) return <Redirect to={isStaff ? '/staff' : '/'} />;
+  const staffUrl = location === '/staff' || location.startsWith('/staff/');
+  if (user && staffUrl && !isStaff) return <Unauthorized />;
 
   return (
     // Keep a shared shell (sidebar, navbar) outside the boundary so it
@@ -55,6 +64,11 @@ function Router() {
         <Route path="/history" component={HistoryPage} />
         <Route path="/reports" component={PastReportsPage} />
         <Route path="/reports/:id" component={ReportDetailPage} />
+        <Route path="/submissions" component={SubmissionsPage} />
+        <Route path="/submissions/:id" component={SubmissionDetailPage} />
+        <Route path="/staff" component={StaffPage} />
+        <Route path="/staff/accounts" component={StaffAccountsPage} />
+        <Route path="/staff/submissions/:id" component={StaffDetailPage} />
         <Route component={NotFound} />
       </Switch>
     </RoutedErrorBoundary>

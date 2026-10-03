@@ -7,6 +7,7 @@ import { pool } from "@workspace/db";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { apiErrorHandler } from "./middlewares/api-error-handler";
+import { privateApi } from "./middlewares/private-api";
 
 const app: Express = express();
 const sessionSecret = process.env.SESSION_SECRET;
@@ -34,6 +35,7 @@ app.use(
     },
   }),
 );
+app.use("/api", privateApi);
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: true }));

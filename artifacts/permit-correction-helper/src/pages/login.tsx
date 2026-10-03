@@ -38,7 +38,7 @@ export default function LoginPage() {
       const user = await login.mutateAsync({ data: values });
       queryClient.clear();
       queryClient.setQueryData(getGetMeQueryKey(), user);
-      setLocation("/");
+      setLocation(user.role === "city_staff_admin" ? "/staff" : "/");
     } catch (error) {
       setServerError((error as { status?: number })?.status === 401
         ? "That username and password don't match. Check your details and try again."
@@ -68,7 +68,7 @@ export default function LoginPage() {
             Get back to what matters.
           </h1>
           <p className="mt-6 max-w-md text-base leading-relaxed text-muted-foreground">
-            Log in to review your saved correction reports and keep moving toward resubmittal.
+            Residents and City Staff log in here. Review your saved correction reports and keep moving toward resubmittal.
           </p>
           <div className="mt-10 hidden border-t border-border pt-6 md:block">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">A steady place to return to</p>
@@ -82,7 +82,7 @@ export default function LoginPage() {
           <div className="mb-8">
             <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-accent">Welcome back / 01</p>
             <h2 className="font-serif text-3xl font-semibold tracking-tight">Log in</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Your reports are right where you left them.</p>
+            <p className="mt-2 text-sm text-muted-foreground">For residents and City Staff.</p>
           </div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-5">

@@ -12,4 +12,5 @@ export interface AnalyzeInput {
   /** Base64 encoded file */
   fileData?: string;
   sampleId?: string;
+  documentId?: string;
 }

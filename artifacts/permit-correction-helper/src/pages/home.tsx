@@ -22,6 +22,9 @@ import {
   useUpdateReportItem,
   useListNotifications,
   useLogOut,
+  useGetMe,
+  getGetMeQueryKey,
+  getListSubmissionsQueryKey,
   getGetReportQueryKey,
   getListReportsQueryKey,
   getListNotificationsQueryKey,
@@ -37,6 +40,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import QuestionPanel from "@/components/question-panel";
+import { errorMessage, useDocumentUpload } from "@/lib/documents";
 
 export default function Home() {
   const [reportId, setReportId] = useState<number | null>(null);
@@ -64,6 +68,9 @@ export default function Home() {
 export function TopNav() {
   const { data: notifications } = useListNotifications();
   const unreadCount = notifications?.length || 0;
+  const { data: me } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
+  const isStaff = me?.role === "city_staff_admin";
+  const navCls = (active: boolean) => `px-2 py-2 text-sm rounded-md transition-colors ${active ? "text-primary font-semibold bg-primary/5" : "text-muted-foreground hover:text-foreground"}`;
   const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const logout = useLogOut();
@@ -79,7 +86,7 @@ export function TopNav() {
 
   return (
     <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10 no-print">
-      <div className="w-full max-w-5xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+      <div className="w-full max-w-5xl mx-auto px-4 md:px-8 min-h-16 py-2 flex flex-wrap items-center justify-between gap-y-1">
         <Link href="/" className="flex items-center gap-2 text-primary">
           <ShieldAlert className="w-6 h-6" />
           <h1 className="font-serif font-semibold text-lg md:text-xl tracking-tight">
@@ -88,7 +95,7 @@ export function TopNav() {
           </h1>
         </Link>
 
-        <nav className="flex items-center gap-1 sm:gap-3" aria-label="Main navigation">
+        <nav className="flex flex-wrap min-w-0 max-w-full items-center justify-end gap-1 sm:gap-3" aria-label="Main navigation">
           <Link href="/" aria-current={location === "/" ? "page" : undefined} className={`hidden sm:inline-flex px-2 py-2 text-sm rounded-md transition-colors ${location === "/" ? "text-primary font-semibold bg-primary/5" : "text-muted-foreground hover:text-foreground"}`}>
             Home
           </Link>
@@ -98,6 +105,9 @@ export function TopNav() {
           <Link href="/reports" aria-current={location.startsWith("/reports") ? "page" : undefined} className={`px-2 py-2 text-sm rounded-md transition-colors ${location.startsWith("/reports") ? "text-primary font-semibold bg-primary/5" : "text-muted-foreground hover:text-foreground"}`}>
             <span className="sm:hidden">Reports</span><span className="hidden sm:inline">Past Reports</span>
           </Link>
+          <Link href="/submissions" data-testid="link-nav-submissions" aria-current={location.startsWith("/submissions") ? "page" : undefined} className={navCls(location.startsWith("/submissions"))}>Submissions</Link>
+          {isStaff && <Link href="/staff" data-testid="link-nav-staff" aria-current={location === "/staff" || location.startsWith("/staff/submissions") ? "page" : undefined} className={navCls(location === "/staff" || location.startsWith("/staff/submissions"))}>Review</Link>}
+          {isStaff && <Link href="/staff/accounts" data-testid="link-nav-staff-accounts" aria-current={location === "/staff/accounts" ? "page" : undefined} className={navCls(location === "/staff/accounts")}>Accounts</Link>}
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="Notifications" className="relative text-muted-foreground hover:text-foreground">
@@ -144,6 +154,8 @@ function UploadFlow({ onReportGenerated }: { onReportGenerated: (id: number) => 
   const [dragActive, setDragActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadError, setUploadError] = useState("");
+  const uploadDocument = useDocumentUpload();
 
   const { data: samples, isLoading: loadingSamples } = useListSamples();
   const analyze = useAnalyzeLetter();
@@ -152,6 +164,7 @@ function UploadFlow({ onReportGenerated }: { onReportGenerated: (id: number) => 
   const reportSaved = (id: number) => {
     queryClient.invalidateQueries({ queryKey: getListReportsQueryKey() });
     queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getListSubmissionsQueryKey() });
     onReportGenerated(id);
   };
 
@@ -174,37 +187,19 @@ function UploadFlow({ onReportGenerated }: { onReportGenerated: (id: number) => 
     }
   };
 
-  const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      let encoded = reader.result?.toString() || '';
-      // Strip off the data:image/png;base64, part if present
-      const commaIdx = encoded.indexOf(',');
-      if (commaIdx !== -1) {
-        encoded = encoded.substring(commaIdx + 1);
-      }
-      resolve(encoded);
-    };
-    reader.onerror = error => reject(error);
-  });
-
   const runAnalysisWithFile = async () => {
     if (!file) return;
     setIsProcessing(true);
+    setUploadError("");
     try {
-      const base64 = await toBase64(file);
-      analyze.mutate({
-        data: {
-          fileName: file.name,
-          mimeType: file.type,
-          fileData: base64
-        }
-      }, {
-        onSuccess: (data: any) => reportSaved(data.id),
-        onSettled: () => setIsProcessing(false)
+      const documentId = await uploadDocument(file);
+      const report = await analyze.mutateAsync({
+        data: { documentId, fileName: file.name, mimeType: file.type },
       });
+      reportSaved(report.id);
     } catch (e) {
+      setUploadError(errorMessage(e));
+    } finally {
       setIsProcessing(false);
     }
   };
@@ -236,7 +231,7 @@ function UploadFlow({ onReportGenerated }: { onReportGenerated: (id: number) => 
     );
   }
 
-  if (analyze.isError) {
+  if (analyze.isError || uploadError) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
         <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center">
@@ -244,9 +239,9 @@ function UploadFlow({ onReportGenerated }: { onReportGenerated: (id: number) => 
         </div>
         <div className="max-w-md space-y-2">
           <h2 className="text-2xl font-serif font-medium text-destructive">Failed to analyze</h2>
-          <p className="text-muted-foreground">There was an issue processing this document. Please try a different file or sample.</p>
+          <p className="text-muted-foreground" role="alert" data-testid="status-analyze-error">{uploadError || errorMessage(analyze.error)}</p>
         </div>
-        <Button onClick={() => analyze.reset()}>Try Again</Button>
+        <Button onClick={() => { setUploadError(""); analyze.reset(); }}>Try Again</Button>
       </div>
     );
   }

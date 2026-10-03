@@ -23,3 +23,5 @@ export * from "./users";
 export * from "./reports";
 export * from "./notifications";
 export * from "./user-sessions";
+export * from "./submissions";
+export * from "./documents";

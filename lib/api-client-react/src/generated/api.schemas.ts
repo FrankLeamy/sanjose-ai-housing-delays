@@ -19,9 +19,18 @@ export interface AuthInput {
   password: string;
 }
 
+export type AuthUserRole = typeof AuthUserRole[keyof typeof AuthUserRole];
+
+
+export const AuthUserRole = {
+  resident: 'resident',
+  city_staff_admin: 'city_staff_admin',
+} as const;
+
 export interface AuthUser {
   id: number;
   username: string;
+  role: AuthUserRole;
   createdAt: string;
 }
 
@@ -41,6 +50,7 @@ export interface AnalyzeInput {
   /** Base64 encoded file */
   fileData?: string;
   sampleId?: string;
+  documentId?: string;
 }
 
 export type ReportItemStatus = typeof ReportItemStatus[keyof typeof ReportItemStatus];
@@ -109,4 +119,153 @@ export interface PermitQuestion {
   response: string;
   createdAt: string;
 }
+
+export type ReviewStatus = typeof ReviewStatus[keyof typeof ReviewStatus];
+
+
+export const ReviewStatus = {
+  submitted: 'submitted',
+  in_review: 'in_review',
+  changes_requested: 'changes_requested',
+  review_complete: 'review_complete',
+} as const;
+
+export type SubmissionInputKind = typeof SubmissionInputKind[keyof typeof SubmissionInputKind];
+
+
+export const SubmissionInputKind = {
+  permit: 'permit',
+  correction: 'correction',
+  question: 'question',
+} as const;
+
+export interface SubmissionInput {
+  kind: SubmissionInputKind;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  subject: string;
+  /**
+     * @minLength 1
+     * @maxLength 10000
+     */
+  message: string;
+  /** @maxLength 100 */
+  permitNumber?: string;
+  /** @maxLength 300 */
+  address?: string;
+  /** @maxItems 10 */
+  documentIds?: string[];
+}
+
+export type SubmissionKind = typeof SubmissionKind[keyof typeof SubmissionKind];
+
+
+export const SubmissionKind = {
+  permit: 'permit',
+  correction: 'correction',
+  question: 'question',
+  report: 'report',
+} as const;
+
+export interface Submission {
+  id: number;
+  kind: SubmissionKind;
+  subject: string;
+  message: string;
+  permitNumber: string;
+  address: string;
+  status: ReviewStatus;
+  reviewMessage: string;
+  resident: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type DocumentInputContentType = typeof DocumentInputContentType[keyof typeof DocumentInputContentType];
+
+
+export const DocumentInputContentType = {
+  'application/pdf': 'application/pdf',
+  'image/png': 'image/png',
+  'image/jpeg': 'image/jpeg',
+} as const;
+
+export interface DocumentInput {
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 10485760
+     */
+  size: number;
+  contentType: DocumentInputContentType;
+}
+
+export interface DocumentUpload {
+  id: string;
+  uploadURL: string;
+}
+
+export interface Document {
+  id: string;
+  name: string;
+  contentType: string;
+  size: number;
+}
+
+export type SubmissionDetail = Submission & ({
+  documents: Document[];
+  report: PermitReport | null;
+  question: PermitQuestion | null;
+});
+
+export interface ReviewInput {
+  status: ReviewStatus;
+  /** @maxLength 10000 */
+  reviewMessage: string;
+}
+
+export interface NoteInput {
+  /**
+     * @minLength 1
+     * @maxLength 10000
+     */
+  body: string;
+}
+
+export interface StaffNote {
+  id: number;
+  body: string;
+  author: string;
+  createdAt: string;
+}
+
+export type ListStaffSubmissionsParams = {
+/**
+ * @maxLength 100
+ */
+permitNumber?: string;
+/**
+ * @maxLength 300
+ */
+address?: string;
+/**
+ * @maxLength 30
+ */
+resident?: string;
+status?: ReviewStatus;
+/**
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+fromDate?: string;
+/**
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+toDate?: string;
+};
 

@@ -1,12 +1,13 @@
 import { Router, type IRouter } from "express";
 import OpenAI from "openai";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, isNotNull } from "drizzle-orm";
 import { db, permitQuestionsTable } from "@workspace/db";
 import {
   AskPermitQuestionBody,
   AskPermitQuestionResponse,
   ListPermitQuestionsResponse,
 } from "@workspace/api-zod";
+import { saveSubmission } from "../lib/submission-service";
 
 const router: IRouter = Router();
 
@@ -14,13 +15,14 @@ router.get("/questions", async (req, res): Promise<void> => {
   const questions = await db
     .select()
     .from(permitQuestionsTable)
-    .where(eq(permitQuestionsTable.userId, req.session.userId!))
+    .where(req.authUser!.role === "city_staff_admin"
+      ? isNotNull(permitQuestionsTable.userId) : eq(permitQuestionsTable.userId, req.authUser!.id))
     .orderBy(desc(permitQuestionsTable.createdAt), desc(permitQuestionsTable.id));
   res.json(ListPermitQuestionsResponse.parse(questions));
 });
 
 router.post("/questions", async (req, res): Promise<void> => {
-  const input = AskPermitQuestionBody.safeParse(req.body);
+  const input = AskPermitQuestionBody.strict().safeParse(req.body);
   const question = input.success ? input.data.question.trim() : "";
   if (!input.success || !question) {
     res.status(400).json({ error: "Please enter a permitting question (up to 5,000 characters)." });
@@ -56,10 +58,15 @@ router.post("/questions", async (req, res): Promise<void> => {
     return;
   }
 
-  const [record] = await db
-    .insert(permitQuestionsTable)
-    .values({ userId: req.session.userId!, question, response: answer })
-    .returning();
+  const record = await db.transaction(async (tx) => {
+    const [saved] = await tx.insert(permitQuestionsTable)
+      .values({ userId: req.authUser!.id, question, response: answer }).returning();
+    await saveSubmission(tx, {
+      userId: req.authUser!.id, kind: "question", questionId: saved.id,
+      subject: question.slice(0, 200), message: question,
+    });
+    return saved;
+  });
   res.status(201).json(AskPermitQuestionResponse.parse(record));
 });
 

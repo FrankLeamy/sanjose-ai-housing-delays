@@ -1,0 +1,39 @@
+Update my existing permit correction prototype to support two secure user roles: City Staff and Resident. Keep the current layout, permit records, and existing features unchanged. Do not delete existing data or redesign the interface.
+City Staff account
+- Create a secure City Staff login with an administrator role.
+- City Staff users can view all resident reports, permit submissions, uploaded documents, and correction requests.
+- Staff can search and filter submissions by permit number, address, status, date, and resident.
+- Staff can update review statuses and add staff-only internal notes.
+- Staff-only notes and information must never be visible to residents.
+- Residents must not be able to create a City Staff account through public registration. Staff accounts should be created only by an existing administrator or through a secure development setup.
+Resident account
+- Add a resident registration and login option.
+- Residents can submit permit questions, correction requests, and documents.
+- Residents can view only their own submissions, uploaded documents, questions, and status updates.
+- Residents must not be able to view another resident’s data by changing a URL, permit number, record ID, or request parameter.
+- Residents must not be able to access the staff dashboard or staff-only notes.
+Security requirements
+- Use server-side role-based access control, not just hidden buttons or frontend restrictions.
+- Check the logged-in user’s identity and role on every protected database request.
+- Enforce ownership checks so residents can access only records connected to their own account.
+- Do not allow users to select or change their own role.
+- Do not hardcode passwords or expose credentials in frontend code.
+- Store passwords securely using the existing authentication system’s password hashing.
+- Show a clear “Unauthorized access” message when a user lacks permission.
+Demo accounts and sample data
+Create these accounts using the existing authentication system:
+- One demo City Staff administrator account
+- Resident Account A
+- Resident Account B
+Add separate sample submissions for Resident A and Resident B so the permissions can be tested. Generate temporary passwords securely and show them only in the development environment or setup instructions.
+Required tests
+Test and confirm that:
+1. City Staff can view all resident submissions.
+2. Resident A can view only Resident A’s submissions.
+3. Resident B can view only Resident B’s submissions.
+4. Resident A cannot access Resident B’s submission by changing the URL or record ID.
+5. Residents cannot view staff-only notes.
+6. Residents cannot access the staff dashboard.
+7. Logged-out users cannot access protected pages.
+8. The existing permit correction helper continues to work after login is added.
+First inspect the current authentication, database schema, and routes. Then implement the smallest safe change. Do not create a separate public staff-registration option, and do not change the existing visual design unless necessary.

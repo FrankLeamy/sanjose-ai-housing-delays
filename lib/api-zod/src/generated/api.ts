@@ -31,6 +31,7 @@ export const SignUpBody = zod.object({
 export const SignUpResponse = zod.object({
   "id": zod.number().int(),
   "username": zod.string(),
+  "role": zod.enum(['resident', 'city_staff_admin']),
   "createdAt": zod.coerce.date()
 })
 
@@ -53,6 +54,7 @@ export const LogInBody = zod.object({
 export const LogInResponse = zod.object({
   "id": zod.number().int(),
   "username": zod.string(),
+  "role": zod.enum(['resident', 'city_staff_admin']),
   "createdAt": zod.coerce.date()
 })
 
@@ -63,6 +65,7 @@ export const LogOutResponse = zod.void()
 export const GetMeResponse = zod.union([zod.object({
   "id": zod.number().int(),
   "username": zod.string(),
+  "role": zod.enum(['resident', 'city_staff_admin']),
   "createdAt": zod.coerce.date()
 }),zod.null()])
 
@@ -79,7 +82,8 @@ export const AnalyzeLetterBody = zod.object({
   "fileName": zod.string().optional(),
   "mimeType": zod.string().optional(),
   "fileData": zod.string().optional().describe('Base64 encoded file'),
-  "sampleId": zod.string().optional()
+  "sampleId": zod.string().optional(),
+  "documentId": zod.string().optional()
 })
 
 export const AnalyzeLetterResponse = zod.object({
@@ -214,6 +218,262 @@ export const AskPermitQuestionResponse = zod.object({
   "id": zod.number().int(),
   "question": zod.string(),
   "response": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const ListSubmissionsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "kind": zod.enum(['permit', 'correction', 'question', 'report']),
+  "subject": zod.string(),
+  "message": zod.string(),
+  "permitNumber": zod.string(),
+  "address": zod.string(),
+  "status": zod.enum(['submitted', 'in_review', 'changes_requested', 'review_complete']),
+  "reviewMessage": zod.string(),
+  "resident": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListSubmissionsResponse = zod.array(ListSubmissionsResponseItem)
+
+
+export const createSubmissionBodySubjectMax = 200;
+
+export const createSubmissionBodyMessageMax = 10000;
+
+export const createSubmissionBodyPermitNumberMax = 100;
+
+export const createSubmissionBodyAddressMax = 300;
+
+export const createSubmissionBodyDocumentIdsMax = 10;
+
+
+
+export const CreateSubmissionBody = zod.object({
+  "kind": zod.enum(['permit', 'correction', 'question']),
+  "subject": zod.string().min(1).max(createSubmissionBodySubjectMax),
+  "message": zod.string().min(1).max(createSubmissionBodyMessageMax),
+  "permitNumber": zod.string().max(createSubmissionBodyPermitNumberMax).optional(),
+  "address": zod.string().max(createSubmissionBodyAddressMax).optional(),
+  "documentIds": zod.array(zod.string()).max(createSubmissionBodyDocumentIdsMax).optional()
+})
+
+export const CreateSubmissionResponse = zod.object({
+  "id": zod.number().int(),
+  "kind": zod.enum(['permit', 'correction', 'question', 'report']),
+  "subject": zod.string(),
+  "message": zod.string(),
+  "permitNumber": zod.string(),
+  "address": zod.string(),
+  "status": zod.enum(['submitted', 'in_review', 'changes_requested', 'review_complete']),
+  "reviewMessage": zod.string(),
+  "resident": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+
+
+
+export const GetSubmissionParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const GetSubmissionResponse = zod.object({
+  "id": zod.number().int(),
+  "kind": zod.enum(['permit', 'correction', 'question', 'report']),
+  "subject": zod.string(),
+  "message": zod.string(),
+  "permitNumber": zod.string(),
+  "address": zod.string(),
+  "status": zod.enum(['submitted', 'in_review', 'changes_requested', 'review_complete']),
+  "reviewMessage": zod.string(),
+  "resident": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "documents": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int()
+})),
+  "report": zod.union([zod.object({
+  "id": zod.number().int(),
+  "address": zod.string(),
+  "summary": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "items": zod.array(zod.object({
+  "id": zod.number().int(),
+  "comment": zod.string(),
+  "status": zod.enum(['met', 'needs_fix']),
+  "howToFix": zod.string(),
+  "department": zod.string(),
+  "category": zod.string(),
+  "unclear": zod.boolean(),
+  "completed": zod.boolean()
+}))
+}),zod.null()]),
+  "question": zod.union([zod.object({
+  "id": zod.number().int(),
+  "question": zod.string(),
+  "response": zod.string(),
+  "createdAt": zod.coerce.date()
+}),zod.null()])
+}))
+
+
+export const requestDocumentUploadBodyNameMax = 255;
+
+export const requestDocumentUploadBodySizeMax = 10485760;
+
+
+
+export const RequestDocumentUploadBody = zod.object({
+  "name": zod.string().min(1).max(requestDocumentUploadBodyNameMax),
+  "size": zod.number().int().min(1).max(requestDocumentUploadBodySizeMax),
+  "contentType": zod.enum(['application/pdf', 'image/png', 'image/jpeg'])
+})
+
+export const RequestDocumentUploadResponse = zod.object({
+  "id": zod.string(),
+  "uploadURL": zod.string()
+})
+
+
+export const DownloadDocumentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DownloadDocumentResponse = zod.unknown()
+
+
+export const listStaffSubmissionsQueryPermitNumberMax = 100;
+
+export const listStaffSubmissionsQueryAddressMax = 300;
+
+export const listStaffSubmissionsQueryResidentMax = 30;
+
+export const listStaffSubmissionsQueryFromDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const listStaffSubmissionsQueryToDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const ListStaffSubmissionsQueryParams = zod.object({
+  "permitNumber": zod.coerce.string().max(listStaffSubmissionsQueryPermitNumberMax).optional(),
+  "address": zod.coerce.string().max(listStaffSubmissionsQueryAddressMax).optional(),
+  "resident": zod.coerce.string().max(listStaffSubmissionsQueryResidentMax).optional(),
+  "status": zod.enum(['submitted', 'in_review', 'changes_requested', 'review_complete']).optional(),
+  "fromDate": zod.coerce.string().regex(listStaffSubmissionsQueryFromDateRegExp).optional(),
+  "toDate": zod.coerce.string().regex(listStaffSubmissionsQueryToDateRegExp).optional()
+})
+
+export const ListStaffSubmissionsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "kind": zod.enum(['permit', 'correction', 'question', 'report']),
+  "subject": zod.string(),
+  "message": zod.string(),
+  "permitNumber": zod.string(),
+  "address": zod.string(),
+  "status": zod.enum(['submitted', 'in_review', 'changes_requested', 'review_complete']),
+  "reviewMessage": zod.string(),
+  "resident": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListStaffSubmissionsResponse = zod.array(ListStaffSubmissionsResponseItem)
+
+
+
+
+
+export const UpdateSubmissionReviewParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const updateSubmissionReviewBodyReviewMessageMax = 10000;
+
+
+
+export const UpdateSubmissionReviewBody = zod.object({
+  "status": zod.enum(['submitted', 'in_review', 'changes_requested', 'review_complete']),
+  "reviewMessage": zod.string().max(updateSubmissionReviewBodyReviewMessageMax)
+})
+
+export const UpdateSubmissionReviewResponse = zod.object({
+  "id": zod.number().int(),
+  "kind": zod.enum(['permit', 'correction', 'question', 'report']),
+  "subject": zod.string(),
+  "message": zod.string(),
+  "permitNumber": zod.string(),
+  "address": zod.string(),
+  "status": zod.enum(['submitted', 'in_review', 'changes_requested', 'review_complete']),
+  "reviewMessage": zod.string(),
+  "resident": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+
+
+
+export const ListStaffNotesParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const ListStaffNotesResponseItem = zod.object({
+  "id": zod.number().int(),
+  "body": zod.string(),
+  "author": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListStaffNotesResponse = zod.array(ListStaffNotesResponseItem)
+
+
+
+
+
+export const AddStaffNoteParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const addStaffNoteBodyBodyMax = 10000;
+
+
+
+export const AddStaffNoteBody = zod.object({
+  "body": zod.string().min(1).max(addStaffNoteBodyBodyMax)
+})
+
+export const AddStaffNoteResponse = zod.object({
+  "id": zod.number().int(),
+  "body": zod.string(),
+  "author": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const createStaffAccountBodyUsernameMin = 3;
+export const createStaffAccountBodyUsernameMax = 30;
+
+
+export const createStaffAccountBodyUsernameRegExp = new RegExp('^[a-zA-Z0-9_]+$');
+export const createStaffAccountBodyPasswordMin = 8;
+export const createStaffAccountBodyPasswordMax = 128;
+
+
+
+export const CreateStaffAccountBody = zod.object({
+  "username": zod.string().min(createStaffAccountBodyUsernameMin).max(createStaffAccountBodyUsernameMax).regex(createStaffAccountBodyUsernameRegExp),
+  "password": zod.string().min(createStaffAccountBodyPasswordMin).max(createStaffAccountBodyPasswordMax)
+})
+
+export const CreateStaffAccountResponse = zod.object({
+  "id": zod.number().int(),
+  "username": zod.string(),
+  "role": zod.enum(['resident', 'city_staff_admin']),
   "createdAt": zod.coerce.date()
 })
 

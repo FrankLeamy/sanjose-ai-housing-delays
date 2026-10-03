@@ -23,7 +23,7 @@ async function startSession(req: Request, userId: number): Promise<void> {
 }
 
 router.post("/signup", async (req, res): Promise<void> => {
-  const input = SignUpBody.safeParse(req.body);
+  const input = SignUpBody.strict().safeParse(req.body);
   if (!input.success) {
     res.status(400).json({ error: "Use a username of 3–30 letters, numbers or underscores and a password of 8–128 characters." });
     return;
@@ -39,7 +39,7 @@ router.post("/signup", async (req, res): Promise<void> => {
   const passwordHash = await bcrypt.hash(input.data.password, 12);
   let user: typeof usersTable.$inferSelect;
   try {
-    [user] = await db.insert(usersTable).values({ username, passwordHash }).returning();
+    [user] = await db.insert(usersTable).values({ username, passwordHash, role: "resident" }).returning();
   } catch (error) {
     if (typeof error === "object" && error !== null &&
         ("code" in error && error.code === "23505" ||

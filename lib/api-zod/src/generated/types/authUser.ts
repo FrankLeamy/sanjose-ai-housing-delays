@@ -5,9 +5,11 @@
  * Permit Correction Helper API
  * OpenAPI spec version: 0.1.0
  */
+import type { AuthUserRole } from './authUserRole';
 
 export interface AuthUser {
   id: number;
   username: string;
+  role: AuthUserRole;
   createdAt: Date;
 }

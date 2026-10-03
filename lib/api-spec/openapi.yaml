@@ -219,6 +219,158 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PermitQuestion"
+  /submissions:
+    get:
+      operationId: listSubmissions
+      tags: [permits]
+      responses:
+        "200":
+          description: Only submissions belonging to the current account
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Submission" }
+    post:
+      operationId: createSubmission
+      tags: [permits]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SubmissionInput" }
+      responses:
+        "201":
+          description: Submission received
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Submission" }
+  /submissions/{id}:
+    get:
+      operationId: getSubmission
+      tags: [permits]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Submission details without staff-only notes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SubmissionDetail" }
+  /documents/upload-url:
+    post:
+      operationId: requestDocumentUpload
+      tags: [permits]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DocumentInput" }
+      responses:
+        "201":
+          description: Private document upload slot
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DocumentUpload" }
+  /documents/{id}:
+    get:
+      operationId: downloadDocument
+      tags: [permits]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Private file download, owner or staff only
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+  /staff/submissions:
+    get:
+      operationId: listStaffSubmissions
+      tags: [permits]
+      parameters:
+        - { in: query, name: permitNumber, schema: { type: string, maxLength: 100 } }
+        - { in: query, name: address, schema: { type: string, maxLength: 300 } }
+        - { in: query, name: resident, schema: { type: string, maxLength: 30 } }
+        - { in: query, name: status, schema: { $ref: "#/components/schemas/ReviewStatus" } }
+        - { in: query, name: fromDate, schema: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" } }
+        - { in: query, name: toDate, schema: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" } }
+      responses:
+        "200":
+          description: Staff review queue
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Submission" }
+  /staff/submissions/{id}:
+    patch:
+      operationId: updateSubmissionReview
+      tags: [permits]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: integer, minimum: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReviewInput" }
+      responses:
+        "200":
+          description: Review updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Submission" }
+  /staff/submissions/{id}/notes:
+    get:
+      operationId: listStaffNotes
+      tags: [permits]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Staff-only notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/StaffNote" }
+    post:
+      operationId: addStaffNote
+      tags: [permits]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: integer, minimum: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NoteInput" }
+      responses:
+        "201":
+          description: Internal note saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffNote" }
+  /staff/accounts:
+    post:
+      operationId: createStaffAccount
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AuthInput" }
+      responses:
+        "201":
+          description: City Staff administrator created by an existing administrator
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthUser" }
 components:
   schemas:
     AuthInput:
@@ -233,8 +385,9 @@ components:
       properties:
         id: { type: integer }
         username: { type: string }
+        role: { type: string, enum: [resident, city_staff_admin] }
         createdAt: { type: string, format: date-time }
-      required: [id, username, createdAt]
+      required: [id, username, role, createdAt]
     HealthStatus:
       type: object
       properties:
@@ -254,6 +407,7 @@ components:
         mimeType: { type: string }
         fileData: { type: string, description: Base64 encoded file }
         sampleId: { type: string }
+        documentId: { type: string }
       additionalProperties: false
     PermitReport:
       type: object
@@ -330,3 +484,96 @@ components:
         response: { type: string }
         createdAt: { type: string, format: date-time }
       required: [id, question, response, createdAt]
+    ReviewStatus:
+      type: string
+      enum: [submitted, in_review, changes_requested, review_complete]
+    SubmissionInput:
+      type: object
+      additionalProperties: false
+      required: [kind, subject, message]
+      properties:
+        kind: { type: string, enum: [permit, correction, question] }
+        subject: { type: string, minLength: 1, maxLength: 200 }
+        message: { type: string, minLength: 1, maxLength: 10000 }
+        permitNumber: { type: string, maxLength: 100 }
+        address: { type: string, maxLength: 300 }
+        documentIds:
+          type: array
+          maxItems: 10
+          uniqueItems: true
+          items: { type: string }
+    Submission:
+      type: object
+      required: [id, kind, subject, message, permitNumber, address, status, reviewMessage, resident, createdAt, updatedAt]
+      properties:
+        id: { type: integer }
+        kind: { type: string, enum: [permit, correction, question, report] }
+        subject: { type: string }
+        message: { type: string }
+        permitNumber: { type: string }
+        address: { type: string }
+        status: { $ref: "#/components/schemas/ReviewStatus" }
+        reviewMessage: { type: string }
+        resident: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    DocumentInput:
+      type: object
+      additionalProperties: false
+      required: [name, size, contentType]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 255 }
+        size: { type: integer, minimum: 1, maximum: 10485760 }
+        contentType: { type: string, enum: [application/pdf, image/png, image/jpeg] }
+    DocumentUpload:
+      type: object
+      required: [id, uploadURL]
+      properties:
+        id: { type: string }
+        uploadURL: { type: string }
+    Document:
+      type: object
+      required: [id, name, contentType, size]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        contentType: { type: string }
+        size: { type: integer }
+    SubmissionDetail:
+      allOf:
+        - { $ref: "#/components/schemas/Submission" }
+        - type: object
+          required: [documents, report, question]
+          properties:
+            documents:
+              type: array
+              items: { $ref: "#/components/schemas/Document" }
+            report:
+              oneOf:
+                - { $ref: "#/components/schemas/PermitReport" }
+                - { type: "null" }
+            question:
+              oneOf:
+                - { $ref: "#/components/schemas/PermitQuestion" }
+                - { type: "null" }
+    ReviewInput:
+      type: object
+      additionalProperties: false
+      required: [status, reviewMessage]
+      properties:
+        status: { $ref: "#/components/schemas/ReviewStatus" }
+        reviewMessage: { type: string, maxLength: 10000 }
+    NoteInput:
+      type: object
+      additionalProperties: false
+      required: [body]
+      properties:
+        body: { type: string, minLength: 1, maxLength: 10000 }
+    StaffNote:
+      type: object
+      required: [id, body, author, createdAt]
+      properties:
+        id: { type: integer }
+        body: { type: string }
+        author: { type: string }
+        createdAt: { type: string, format: date-time }

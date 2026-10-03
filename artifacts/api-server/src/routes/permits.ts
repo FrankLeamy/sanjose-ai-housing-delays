@@ -14,6 +14,7 @@ import {
   UpdateReportItemParams,
   UpdateReportItemResponse,
 } from "@workspace/api-zod";
+import { prepareDocuments, saveSubmission, SubmissionInputError } from "../lib/submission-service";
 
 type Item = {
   id: number;
@@ -131,19 +132,27 @@ router.get("/samples", (_req, res): void => {
 });
 
 router.post("/analyze", async (req, res): Promise<void> => {
-  const input = AnalyzeLetterBody.safeParse(req.body);
+  const input = AnalyzeLetterBody.strict().safeParse(req.body);
   if (!input.success) {
     res.status(400).json({ error: "Please choose a supported letter or sample." });
     return;
   }
-  if (!input.data.sampleId && !input.data.fileData) {
+  if (input.data.fileData || !input.data.sampleId && !input.data.documentId) {
     res.status(400).json({ error: "Please select a PDF, PNG, or JPG file." });
     return;
   }
+  if (input.data.sampleId && !samples.some((sample) => sample.id === input.data.sampleId)) {
+    res.status(400).json({ error: "Please choose a supported sample." }); return;
+  }
+  if (input.data.sampleId && input.data.documentId) {
+    res.status(400).json({ error: "Choose a sample or an uploaded file, not both." }); return;
+  }
 
+  try {
+  const documents = await prepareDocuments(input.data.documentId ? [input.data.documentId] : [], req.authUser!.id);
   const needsFixes =
     input.data.sampleId === "needs-fixes" ||
-    (input.data.fileName?.toLowerCase().includes("fix") ?? false);
+    (documents[0]?.name.toLowerCase().includes("fix") ?? false);
   const draft = buildReport(needsFixes, 0);
   const report = await db.transaction(async (tx) => {
     const [created] = await tx
@@ -166,16 +175,25 @@ router.post("/analyze", async (req, res): Promise<void> => {
         ? "Your submission needs changes. See the items below."
         : "Good news! Your submission appears complete.",
     });
+    await saveSubmission(tx, {
+      userId: req.authUser!.id, kind: "report", reportId: saved.id,
+      subject: documents[0]?.name.slice(0, 200) ?? `Sample correction report: ${input.data.sampleId}`,
+      address: saved.address, message: saved.summary,
+    }, documents);
     return saved;
   });
   res.status(201).json(AnalyzeLetterResponse.parse(report));
+  } catch (error) {
+    if (error instanceof SubmissionInputError) { res.status(error.status).json({ error: error.message }); return; }
+    throw error;
+  }
 });
 
 router.get("/reports", async (req, res): Promise<void> => {
   const reports = await db
     .select()
     .from(reportsTable)
-    .where(eq(reportsTable.userId, req.session.userId!))
+    .where(req.authUser!.role === "city_staff_admin" ? undefined : eq(reportsTable.userId, req.authUser!.id))
     .orderBy(desc(reportsTable.createdAt), desc(reportsTable.id));
   res.json(ListReportsResponse.parse(reports));
 });
@@ -210,9 +228,10 @@ router.get("/reports/:id", async (req, res): Promise<void> => {
   const [report] = await db
     .select()
     .from(reportsTable)
-    .where(and(eq(reportsTable.id, params.data.id), eq(reportsTable.userId, req.session.userId!)));
+    .where(and(eq(reportsTable.id, params.data.id),
+      req.authUser!.role === "city_staff_admin" ? undefined : eq(reportsTable.userId, req.authUser!.id)));
   if (!report) {
-    res.status(404).json({ error: "Report not found." });
+    res.status(403).json({ error: "Unauthorized access" });
     return;
   }
   res.json(GetReportResponse.parse(report));
@@ -220,7 +239,7 @@ router.get("/reports/:id", async (req, res): Promise<void> => {
 
 router.patch("/reports/:reportId/items/:itemId", async (req, res): Promise<void> => {
   const params = UpdateReportItemParams.safeParse(req.params);
-  const body = UpdateReportItemBody.safeParse(req.body);
+  const body = UpdateReportItemBody.strict().safeParse(req.body);
   if (!params.success || !body.success) {
     res.status(400).json({ error: "Invalid progress update." });
     return;
@@ -229,6 +248,9 @@ router.patch("/reports/:reportId/items/:itemId", async (req, res): Promise<void>
     .select()
     .from(reportsTable)
     .where(and(eq(reportsTable.id, params.data.reportId), eq(reportsTable.userId, req.session.userId!)));
+  if (!report) {
+    res.status(403).json({ error: "Unauthorized access" }); return;
+  }
   const item = report?.items.find((candidate) => candidate.id === params.data.itemId);
   if (!item) {
     res.status(404).json({ error: "Checklist item not found." });
