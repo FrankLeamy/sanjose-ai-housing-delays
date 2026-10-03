@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 import { eq } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
+import { isStaffRole } from "../lib/roles";
 
 export const requireUser: RequestHandler = async (req, res, next): Promise<void> => {
   if (!req.session.userId) {
@@ -19,7 +20,7 @@ export const requireUser: RequestHandler = async (req, res, next): Promise<void>
 };
 
 export const requireStaff: RequestHandler = (req, res, next): void => {
-  if (req.authUser?.role !== "city_staff_admin") {
+  if (!isStaffRole(req.authUser?.role)) {
     res.status(403).json({ error: "Unauthorized access" });
     return;
   }

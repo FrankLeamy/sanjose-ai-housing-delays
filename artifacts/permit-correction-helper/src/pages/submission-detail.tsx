@@ -4,6 +4,7 @@ import { useGetMe, useGetSubmission, getGetMeQueryKey, getGetSubmissionQueryKey 
 import { Button } from "@/components/ui/button";
 import { PageShell, ErrorPanel, ListSkeleton } from "@/components/submission-ui";
 import { SubmissionBody } from "@/components/submission-body";
+import { isStaffRole } from "@/lib/roles";
 
 export default function SubmissionDetailPage() {
   const params = useParams<{ id: string }>();
@@ -12,7 +13,7 @@ export default function SubmissionDetailPage() {
   const { data: me } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
   const q = useGetSubmission(id, { query: { queryKey: getGetSubmissionQueryKey(id), enabled: valid } });
   useEffect(() => { document.title = "Submission | Permit Correction Helper"; }, []);
-  const isStaff = me?.role === "city_staff_admin";
+  const isStaff = isStaffRole(me?.role);
 
   return (
     <PageShell>

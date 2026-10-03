@@ -9,6 +9,7 @@ import { getGetMeQueryKey, useLogIn } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { isStaffRole } from "@/lib/roles";
 
 const loginSchema = z.object({
   username: z.string().trim().min(1, "Enter your username."),
@@ -38,7 +39,7 @@ export default function LoginPage() {
       const user = await login.mutateAsync({ data: values });
       queryClient.clear();
       queryClient.setQueryData(getGetMeQueryKey(), user);
-      setLocation(user.role === "city_staff_admin" ? "/staff" : "/");
+      setLocation(isStaffRole(user.role) ? "/staff" : "/");
     } catch (error) {
       setServerError((error as { status?: number })?.status === 401
         ? "That username and password don't match. Check your details and try again."

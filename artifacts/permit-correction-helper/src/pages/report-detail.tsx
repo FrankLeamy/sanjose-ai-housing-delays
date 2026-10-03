@@ -2,11 +2,15 @@ import { useEffect } from "react";
 import { useLocation, useParams } from "wouter";
 import { TopNav, ReportView } from "@/pages/home";
 import { Button } from "@/components/ui/button";
+import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
+import { isStaffRole } from "@/lib/roles";
 
 export default function ReportDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const reportId = Number(id);
+  const { data: me } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
+  const backPath = isStaffRole(me?.role) ? "/staff" : "/reports";
 
   useEffect(() => {
     document.title = "Correction report | Permit Correction Helper";
@@ -17,11 +21,11 @@ export default function ReportDetailPage() {
       <TopNav />
       <main className="flex-1 w-full max-w-5xl mx-auto p-4 md:p-8">
         {Number.isSafeInteger(reportId) && reportId > 0 ? (
-          <ReportView reportId={reportId} onReset={() => setLocation("/reports")} />
+          <ReportView reportId={reportId} onReset={() => setLocation(backPath)} />
         ) : (
           <div className="py-20 text-center">
             <p className="text-destructive font-medium mb-4">Report not found.</p>
-            <Button variant="outline" onClick={() => setLocation("/reports")}>Past reports</Button>
+            <Button variant="outline" onClick={() => setLocation(backPath)}>{isStaffRole(me?.role) ? "Staff dashboard" : "Past reports"}</Button>
           </div>
         )}
       </main>

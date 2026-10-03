@@ -15,6 +15,7 @@ import {
   UpdateReportItemResponse,
 } from "@workspace/api-zod";
 import { prepareDocuments, saveSubmission, SubmissionInputError } from "../lib/submission-service";
+import { isStaffRole } from "../lib/roles";
 
 type Item = {
   id: number;
@@ -193,7 +194,7 @@ router.get("/reports", async (req, res): Promise<void> => {
   const reports = await db
     .select()
     .from(reportsTable)
-    .where(req.authUser!.role === "city_staff_admin" ? undefined : eq(reportsTable.userId, req.authUser!.id))
+    .where(isStaffRole(req.authUser!.role) ? undefined : eq(reportsTable.userId, req.authUser!.id))
     .orderBy(desc(reportsTable.createdAt), desc(reportsTable.id));
   res.json(ListReportsResponse.parse(reports));
 });
@@ -229,7 +230,7 @@ router.get("/reports/:id", async (req, res): Promise<void> => {
     .select()
     .from(reportsTable)
     .where(and(eq(reportsTable.id, params.data.id),
-      req.authUser!.role === "city_staff_admin" ? undefined : eq(reportsTable.userId, req.authUser!.id)));
+      isStaffRole(req.authUser!.role) ? undefined : eq(reportsTable.userId, req.authUser!.id)));
   if (!report) {
     res.status(403).json({ error: "Unauthorized access" });
     return;

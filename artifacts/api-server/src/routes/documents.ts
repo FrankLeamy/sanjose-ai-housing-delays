@@ -6,6 +6,7 @@ import { db, documentsTable } from "@workspace/db";
 import { DownloadDocumentParams, RequestDocumentUploadBody, RequestDocumentUploadResponse } from "@workspace/api-zod";
 import { ObjectNotFoundError } from "../lib/objectStorage";
 import { storage } from "../lib/submission-service";
+import { isStaffRole } from "../lib/roles";
 
 const router: IRouter = Router();
 router.post("/documents/upload-url", async (req, res): Promise<void> => {
@@ -28,7 +29,7 @@ router.get("/documents/:id", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: "Invalid document." }); return; }
   const [document] = await db.select().from(documentsTable).where(and(
     eq(documentsTable.id, params.data.id),
-    req.authUser!.role === "city_staff_admin" ? undefined : eq(documentsTable.userId, req.authUser!.id),
+    isStaffRole(req.authUser!.role) ? undefined : eq(documentsTable.userId, req.authUser!.id),
   ));
   if (!document) { res.status(403).json({ error: "Unauthorized access" }); return; }
   if (!document.generation) { res.status(404).json({ error: "Document has not been submitted." }); return; }

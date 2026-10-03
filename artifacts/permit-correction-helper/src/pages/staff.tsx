@@ -13,7 +13,7 @@ export default function StaffPage() {
   const [draft, setDraft] = useState(empty);
   const [applied, setApplied] = useState<ListStaffSubmissionsParams>({});
   const q = useListStaffSubmissions(applied);
-  useEffect(() => { document.title = "Staff review | Permit Correction Helper"; }, []);
+  useEffect(() => { document.title = "City Staff Dashboard | Permit Correction Helper"; }, []);
 
   const apply = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +32,7 @@ export default function StaffPage() {
     <PageShell>
       <div className="space-y-6">
         <div className="space-y-2 border-b border-border pb-6">
-          <h1 className="text-3xl font-serif font-bold">Staff review queue</h1>
+          <h1 className="text-3xl font-serif font-bold">City Staff Dashboard</h1>
           <p className="text-sm text-muted-foreground">Review labels are internal to this app and are not official permit approvals.</p>
         </div>
         <form onSubmit={apply} className="grid gap-3 md:grid-cols-3" data-testid="form-filters">

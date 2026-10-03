@@ -5,6 +5,26 @@ current identity and role from the database for each protected request. City Sta
 accounts are created by an existing administrator at **Accounts**, or by the
 development-only command below. There is no public staff registration or role-change endpoint.
 
+## Dashboard separation
+
+Database roles `staff`, `admin`, and the existing `city_staff_admin` use the
+**City Staff Dashboard** at `/staff`. Staff navigation contains Dashboard and
+Accounts, not resident Home, History, Past Reports, or Notifications.
+Opening a resident dashboard URL as staff redirects to `/staff`; submission
+detail URLs redirect to the corresponding staff review. Linked reports remain
+available within staff routes.
+
+Residents retain the existing Home layout and resident navigation. Their private
+lists and detail endpoints enforce ownership; staff routes and internal notes are
+denied server-side. Role parameters in a URL or request do not grant privileges.
+Sessions store only the account ID, and protected requests load the role from the
+database. `/me` also loads the current database role; the browser refreshes that
+session check on mount, focus, and periodically.
+
+For another database, apply `lib/db/migrations/20261002_staff_role_aliases.sql`
+before using the `staff` or `admin` role values. This additive migration does not
+change any existing account's role or remove data.
+
 ## Development demo accounts
 
 In the Replit **development terminal**, run:

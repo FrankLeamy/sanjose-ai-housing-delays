@@ -24,3 +24,15 @@ tab while retaining the Home section, current layout, and all submission data.
 
 **How to apply:** Do not reintroduce that navigation tab when extending submission
 features. Removing navigation must not remove underlying records or capabilities.
+
+Staff and residents must use separate dashboard navigation. Staff/admin users
+must not see resident Home or History sections, even through a direct URL.
+Residents retain their existing dashboard and can see only their own private data.
+
+**Why:** The user explicitly clarified that a shared header exposing resident
+sections to City Staff is not acceptable, while requesting preservation of the
+existing data and layout.
+
+**How to apply:** Keep role-specific navigation and routing while preserving
+resident features and staff review tools. Database-loaded roles, not client inputs,
+must remain authoritative for all private data and internal-note permissions.

@@ -3,6 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { db, documentsTable, permitQuestionsTable, reportsTable, submissionsTable, usersTable } from "@workspace/db";
 import { CreateSubmissionBody, CreateSubmissionResponse, GetSubmissionParams, GetSubmissionResponse, ListSubmissionsResponse } from "@workspace/api-zod";
 import { prepareDocuments, saveSubmission, SubmissionInputError } from "../lib/submission-service";
+import { isStaffRole } from "../lib/roles";
 
 export const submissionSelection = {
   id: submissionsTable.id, kind: submissionsTable.kind, subject: submissionsTable.subject,
@@ -16,7 +17,7 @@ const router: IRouter = Router();
 router.get("/submissions", async (req, res): Promise<void> => {
   const rows = await db.select(submissionSelection).from(submissionsTable)
     .innerJoin(usersTable, eq(usersTable.id, submissionsTable.userId))
-    .where(eq(submissionsTable.userId, req.authUser!.id)).orderBy(desc(submissionsTable.createdAt));
+    .where(isStaffRole(req.authUser!.role) ? undefined : eq(submissionsTable.userId, req.authUser!.id)).orderBy(desc(submissionsTable.createdAt));
   res.json(ListSubmissionsResponse.parse(rows));
 });
 router.post("/submissions", async (req, res): Promise<void> => {
@@ -44,7 +45,7 @@ router.get("/submissions/:id", async (req, res): Promise<void> => {
     reportId: submissionsTable.reportId, questionId: submissionsTable.questionId,
   }).from(submissionsTable).innerJoin(usersTable, eq(usersTable.id, submissionsTable.userId))
     .where(and(eq(submissionsTable.id, params.data.id),
-      req.authUser!.role === "city_staff_admin" ? undefined : eq(submissionsTable.userId, req.authUser!.id)));
+      isStaffRole(req.authUser!.role) ? undefined : eq(submissionsTable.userId, req.authUser!.id)));
   if (!row) { res.status(403).json({ error: "Unauthorized access" }); return; }
   const documents = await db.select({
     id: documentsTable.id, name: documentsTable.name, contentType: documentsTable.contentType, size: documentsTable.size,

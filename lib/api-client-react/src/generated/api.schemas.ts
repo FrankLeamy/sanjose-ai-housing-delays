@@ -25,6 +25,8 @@ export type AuthUserRole = typeof AuthUserRole[keyof typeof AuthUserRole];
 export const AuthUserRole = {
   resident: 'resident',
   city_staff_admin: 'city_staff_admin',
+  staff: 'staff',
+  admin: 'admin',
 } as const;
 
 export interface AuthUser {

@@ -385,7 +385,7 @@ components:
       properties:
         id: { type: integer }
         username: { type: string }
-        role: { type: string, enum: [resident, city_staff_admin] }
+        role: { type: string, enum: [resident, city_staff_admin, staff, admin] }
         createdAt: { type: string, format: date-time }
       required: [id, username, role, createdAt]
     HealthStatus:

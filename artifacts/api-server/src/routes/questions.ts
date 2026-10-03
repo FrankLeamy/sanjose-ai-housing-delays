@@ -8,6 +8,7 @@ import {
   ListPermitQuestionsResponse,
 } from "@workspace/api-zod";
 import { saveSubmission } from "../lib/submission-service";
+import { isStaffRole } from "../lib/roles";
 
 const router: IRouter = Router();
 
@@ -15,7 +16,7 @@ router.get("/questions", async (req, res): Promise<void> => {
   const questions = await db
     .select()
     .from(permitQuestionsTable)
-    .where(req.authUser!.role === "city_staff_admin"
+    .where(isStaffRole(req.authUser!.role)
       ? isNotNull(permitQuestionsTable.userId) : eq(permitQuestionsTable.userId, req.authUser!.id))
     .orderBy(desc(permitQuestionsTable.createdAt), desc(permitQuestionsTable.id));
   res.json(ListPermitQuestionsResponse.parse(questions));

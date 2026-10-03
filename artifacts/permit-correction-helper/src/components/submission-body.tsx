@@ -1,11 +1,14 @@
 import { format } from "date-fns";
 import { Download } from "lucide-react";
 import { Link } from "wouter";
-import type { SubmissionDetail } from "@workspace/api-client-react";
+import { useGetMe, getGetMeQueryKey, type SubmissionDetail } from "@workspace/api-client-react";
+import { isStaffRole } from "@/lib/roles";
 import { StatusBadge, KIND_LABELS } from "@/components/submission-ui";
 import { documentUrl, formatSize } from "@/lib/documents";
 
 export function SubmissionBody({ s, showReview = true }: { s: SubmissionDetail; showReview?: boolean }) {
+  const { data: me } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
+  const reportPrefix = isStaffRole(me?.role) ? "/staff/reports" : "/reports";
   return (
     <div className="space-y-6">
       <div className="space-y-2 border-b border-border pb-5">
@@ -45,7 +48,7 @@ export function SubmissionBody({ s, showReview = true }: { s: SubmissionDetail; 
       {s.report && (
         <section className="space-y-2">
           <h2 className="text-lg font-serif font-semibold">Linked report</h2>
-          <Link href={`/reports/${s.report.id}`} data-testid="link-linked-report" className="block rounded-md border border-border bg-card p-4 hover:bg-muted/40">
+          <Link href={`${reportPrefix}/${s.report.id}`} data-testid="link-linked-report" className="block rounded-md border border-border bg-card p-4 hover:bg-muted/40">
             <p className="font-medium">{s.report.address}</p>
             <p className="text-sm text-muted-foreground mt-1">{s.report.summary}</p>
             <p className="text-xs text-primary mt-2">Open report ({s.report.items.length} items)</p>

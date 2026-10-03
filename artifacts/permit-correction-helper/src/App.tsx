@@ -26,13 +26,14 @@ import StaffPage from '@/pages/staff';
 import StaffDetailPage from '@/pages/staff-detail';
 import StaffAccountsPage from '@/pages/staff-accounts';
 import { Unauthorized } from '@/components/submission-ui';
+import { isStaffRole } from '@/lib/roles';
 
 const queryClient = new QueryClient();
 
 function Router() {
   const [location] = useLocation();
   const { data: user, isLoading, isError, refetch } = useGetMe({
-    query: { queryKey: getGetMeQueryKey(), retry: false },
+    query: { queryKey: getGetMeQueryKey(), retry: false, staleTime: 0, refetchOnMount: 'always', refetchOnWindowFocus: true, refetchInterval: 30_000 },
   });
 
   if (isLoading) {
@@ -48,10 +49,16 @@ function Router() {
   }
   const authPage = location === '/login' || location === '/signup';
   if (!user && !authPage) return <Redirect to="/login" />;
-  const isStaff = user?.role === 'city_staff_admin';
+  const isStaff = isStaffRole(user?.role);
   if (user && authPage) return <Redirect to={isStaff ? '/staff' : '/'} />;
   const staffUrl = location === '/staff' || location.startsWith('/staff/');
   if (user && staffUrl && !isStaff) return <Unauthorized />;
+  if (user && !isStaff && user.role !== 'resident') return <Unauthorized />;
+  // Staff never mount resident pages, even when following a saved URL.
+  if (user && isStaff && !staffUrl) {
+    const submissionDetail = /^\/submissions\/(\d+)$/.exec(location);
+    return <Redirect to={submissionDetail ? `/staff/submissions/${submissionDetail[1]}` : '/staff'} />;
+  }
 
   return (
     // Keep a shared shell (sidebar, navbar) outside the boundary so it
@@ -69,6 +76,7 @@ function Router() {
         <Route path="/staff" component={StaffPage} />
         <Route path="/staff/accounts" component={StaffAccountsPage} />
         <Route path="/staff/submissions/:id" component={StaffDetailPage} />
+        <Route path="/staff/reports/:id" component={ReportDetailPage} />
         <Route component={NotFound} />
       </Switch>
     </RoutedErrorBoundary>

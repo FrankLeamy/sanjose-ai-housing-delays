@@ -31,7 +31,7 @@ export const SignUpBody = zod.object({
 export const SignUpResponse = zod.object({
   "id": zod.number().int(),
   "username": zod.string(),
-  "role": zod.enum(['resident', 'city_staff_admin']),
+  "role": zod.enum(['resident', 'city_staff_admin', 'staff', 'admin']),
   "createdAt": zod.coerce.date()
 })
 
@@ -54,7 +54,7 @@ export const LogInBody = zod.object({
 export const LogInResponse = zod.object({
   "id": zod.number().int(),
   "username": zod.string(),
-  "role": zod.enum(['resident', 'city_staff_admin']),
+  "role": zod.enum(['resident', 'city_staff_admin', 'staff', 'admin']),
   "createdAt": zod.coerce.date()
 })
 
@@ -65,7 +65,7 @@ export const LogOutResponse = zod.void()
 export const GetMeResponse = zod.union([zod.object({
   "id": zod.number().int(),
   "username": zod.string(),
-  "role": zod.enum(['resident', 'city_staff_admin']),
+  "role": zod.enum(['resident', 'city_staff_admin', 'staff', 'admin']),
   "createdAt": zod.coerce.date()
 }),zod.null()])
 
@@ -473,7 +473,7 @@ export const CreateStaffAccountBody = zod.object({
 export const CreateStaffAccountResponse = zod.object({
   "id": zod.number().int(),
   "username": zod.string(),
-  "role": zod.enum(['resident', 'city_staff_admin']),
+  "role": zod.enum(['resident', 'city_staff_admin', 'staff', 'admin']),
   "createdAt": zod.coerce.date()
 })
 

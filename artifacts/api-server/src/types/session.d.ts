@@ -9,7 +9,7 @@ declare module "express-session" {
 declare global {
   namespace Express {
     interface Request {
-      authUser?: { id: number; username: string; role: "resident" | "city_staff_admin" };
+      authUser?: { id: number; username: string; role: "resident" | "city_staff_admin" | "staff" | "admin" };
     }
   }
 }
