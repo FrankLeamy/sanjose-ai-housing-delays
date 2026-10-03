@@ -15,3 +15,12 @@ hashing through the existing authentication system.
 **How to apply:** Extend the existing product and guards. Separate new staff-only
 capabilities from resident features; ask before destructive migrations, provider
 changes, or broad redesigns.
+
+Keep submissions in the existing Home page section, without a duplicate top-level
+Submissions navigation tab.
+
+**Why:** The user explicitly requested removal of the recently added duplicate
+tab while retaining the Home section, current layout, and all submission data.
+
+**How to apply:** Do not reintroduce that navigation tab when extending submission
+features. Removing navigation must not remove underlying records or capabilities.

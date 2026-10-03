@@ -105,7 +105,6 @@ export function TopNav() {
           <Link href="/reports" aria-current={location.startsWith("/reports") ? "page" : undefined} className={`px-2 py-2 text-sm rounded-md transition-colors ${location.startsWith("/reports") ? "text-primary font-semibold bg-primary/5" : "text-muted-foreground hover:text-foreground"}`}>
             <span className="sm:hidden">Reports</span><span className="hidden sm:inline">Past Reports</span>
           </Link>
-          <Link href="/submissions" data-testid="link-nav-submissions" aria-current={location.startsWith("/submissions") ? "page" : undefined} className={navCls(location.startsWith("/submissions"))}>Submissions</Link>
           {isStaff && <Link href="/staff" data-testid="link-nav-staff" aria-current={location === "/staff" || location.startsWith("/staff/submissions") ? "page" : undefined} className={navCls(location === "/staff" || location.startsWith("/staff/submissions"))}>Review</Link>}
           {isStaff && <Link href="/staff/accounts" data-testid="link-nav-staff-accounts" aria-current={location === "/staff/accounts" ? "page" : undefined} className={navCls(location === "/staff/accounts")}>Accounts</Link>}
         <Popover>
