@@ -14,11 +14,16 @@ const destination = destinationIndex >= 0 ? args[destinationIndex + 1] : `/tmp/p
 if (!destination?.startsWith("/tmp/") || destination.includes("/../")) {
   throw new Error("Temporary credentials must be stored outside the workspace, in /tmp.");
 }
-const credentials = [
+const named = args.includes("--named");
+const credentials = (named ? [
+  { label: "City Staff Reviewer", username: "city_staff_reviewer", displayName: "City Staff Reviewer", email: "staff@example.com", role: "city_staff_admin" },
+  { label: "Alex Resident (Resident 1)", username: "resident1", displayName: "Alex Resident", email: "resident1@example.com", role: "resident" },
+  { label: "Existing Resident B", username: "demo_resident_b", role: "resident" },
+] : [
   { label: "City Staff administrator", username: "demo_city_staff", role: "city_staff_admin" },
   { label: "Resident A", username: "demo_resident_a", role: "resident" },
   { label: "Resident B", username: "demo_resident_b", role: "resident" },
-].map((account) => ({ ...account, password: randomBytes(24).toString("base64url") }));
+]).map((account) => ({ ...account, password: randomBytes(24).toString("base64url") }));
 const file = await open(destination, "wx", 0o600);
 const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
 let committed = false;
@@ -33,22 +38,25 @@ try {
     }
     const hash = await bcrypt.hash(account.password, 12);
     const result = user
-      ? await client.query("UPDATE users SET password_hash=$1 WHERE id=$2 AND is_demo=true RETURNING id", [hash, user.id])
-      : await client.query("INSERT INTO users (username,password_hash,role,is_demo) VALUES ($1,$2,$3,true) RETURNING id",
-        [account.username, hash, account.role]);
+      ? await client.query(`UPDATE users SET password_hash=$1,
+          display_name=COALESCE($3,display_name), email=COALESCE($4,email)
+          WHERE id=$2 AND is_demo=true RETURNING id`,
+        [hash, user.id, account.displayName ?? null, account.email ?? null])
+      : await client.query("INSERT INTO users (username,password_hash,role,is_demo,display_name,email) VALUES ($1,$2,$3,true,$4,$5) RETURNING id",
+        [account.username, hash, account.role, account.displayName ?? null, account.email ?? null]);
     account.id = result.rows[0].id;
   }
   const staff = credentials[0];
   for (const [index, resident] of credentials.slice(1).entries()) {
     const label = index === 0 ? "A" : "B";
-    const subject = `Demo resident ${label} correction request`;
+    const subject = named && index === 0 ? "Resident 1 demo permit submission" : `Demo resident ${label} correction request`;
     const existing = await client.query("SELECT id FROM submissions WHERE user_id=$1 AND subject=$2", [resident.id, subject]);
     if (!existing.rowCount) {
       const result = await client.query(`
         INSERT INTO submissions (user_id,kind,subject,message,permit_number,address)
         VALUES ($1,'correction',$2,$3,$4,$5) RETURNING id
       `, [resident.id, subject, `Demo data for permission testing only. Resident ${label} asks staff to review a revised plan.`,
-        `DEMO-${label}-001`, `${index === 0 ? "101" : "202"} Example Lane (demo address)`]);
+        named && index === 0 ? "DEMO-RESIDENT1-001" : `DEMO-${label}-001`, `${index === 0 ? "101" : "202"} Example Lane (demo address)`]);
       await client.query("INSERT INTO staff_notes (submission_id,author_id,body) VALUES ($1,$2,$3)",
         [result.rows[0].id, staff.id, `Private demo staff note for Resident ${label}. Never show this in resident responses.`]);
     }
@@ -61,7 +69,7 @@ try {
   if (args.includes("--show-passwords") && !args.includes("--quiet")) {
     for (const account of credentials) console.log(`${account.label}: ${account.username} / ${account.password}`);
   } else {
-    console.log("Passwords are not printed. Run setup:demo --show-passwords in the development terminal to rotate and display them.");
+    console.log(`Passwords are not printed. Run setup:demo${named ? " --named" : ""} --show-passwords in the development terminal to rotate and display them.`);
   }
 } catch (error) {
   if (!committed) {

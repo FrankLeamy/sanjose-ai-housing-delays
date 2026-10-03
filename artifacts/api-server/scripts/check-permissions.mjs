@@ -40,13 +40,16 @@ for (const [owner, other, ownRows, otherRows] of [[a, b, aList, bList], [b, a, b
   const denied = await owner(`/submissions/${otherRows[0].id}`);
   assert.equal(denied.status, 403);
   assert.equal(denied.body.error, "Unauthorized access");
+  assert.equal((await owner(`/submissions/${otherRows[0].id}?role=city_staff_admin&userId=${accounts[0].id}&permitNumber=${encodeURIComponent(ownRows[0].permitNumber)}`)).status, 403);
   assert.equal((await owner("/staff/submissions")).status, 403);
+  assert.equal((await owner(`/staff/submissions?role=city_staff_admin&userId=${accounts[0].id}`)).status, 403);
   assert.equal((await owner(`/staff/submissions/${ownRows[0].id}/notes`)).status, 403);
   assert.equal((await owner(`/staff/submissions/${ownRows[0].id}/notes`, "POST", { body: "Must not be saved" })).status, 403);
   assert.equal((await owner(`/staff/submissions/${ownRows[0].id}`, "PATCH", { status: "review_complete", reviewMessage: "Must not be saved" })).status, 403);
   assert.equal((await owner("/staff/accounts", "POST", { username: "must_not_be_created", password: accounts[1].password })).status, 403);
   const spoofed = await owner(`/submissions?userId=${otherRows[0].resident}&permitNumber=${encodeURIComponent(otherRows[0].permitNumber)}`);
   assert.deepEqual(spoofed.body, ownRows);
+  assert.deepEqual((await owner(`/submissions?userId=${otherRows[0].resident}&role=city_staff_admin&includeNotes=true`)).body, ownRows);
   for (const row of ownRows) {
     const detail = await owner(`/submissions/${row.id}`);
     assert.equal(detail.status, 200);

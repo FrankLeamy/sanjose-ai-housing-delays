@@ -28,6 +28,57 @@ These are demonstration accounts, not production administrator credentials.
 
 ## Additive schema and existing records
 
+### Named role-testing accounts
+
+The current login form uses **usernames**, not email addresses. These accounts
+use the existing sessions and bcrypt authentication:
+
+| Account | Name | Email | Login username | Role |
+| --- | --- | --- | --- | --- |
+| Resident 1 | Alex Resident | resident1@example.com | `resident1` | Resident |
+| City Staff | City Staff Reviewer | staff@example.com | `city_staff_reviewer` | City Staff (`city_staff_admin` internally) |
+| Existing second resident | Resident B | — | `demo_resident_b` | Resident |
+
+Names and emails are stored as optional account metadata; they do not change
+the login form or public registration. Before using this setup in another
+development database, apply the additive SQL in
+`lib/db/migrations/20261002_demo_profiles.sql` (or the equivalent Drizzle push).
+
+To generate new temporary passwords and display them **only in the development
+terminal**, run:
+
+```sh
+pnpm --filter @workspace/api-server run setup:demo --named --show-passwords
+```
+
+This creates the two named accounts, reuses the existing Resident B account,
+and rotates only these three tagged demo accounts' passwords. It refuses to
+overwrite non-demo accounts or change roles. It preserves existing submissions.
+Resident 1 owns `DEMO-RESIDENT1-001`; Resident B owns `DEMO-B-001`.
+Both are sample correction submissions, not changes to public permit records.
+
+For permission tests:
+
+1. Open **Log In** and enter `resident1` with its temporary password.
+   Open `/submissions` to find Resident 1's sample; its detail URL is
+   `/submissions/<id>`. Resident B's submission must not appear.
+2. Log out, then log in as `demo_resident_b` to obtain its sample detail URL.
+   This resident must not see Resident 1's submission.
+3. While logged in as either resident, open the other resident's detail URL,
+   `/staff`, and `/staff/accounts`. Access must be denied. Internal notes must
+   never appear in resident details or API responses.
+4. Log out and log in as `city_staff_reviewer`. The **Review** dashboard at
+   `/staff` must show both samples; staff can open each and read its private notes.
+5. To verify record-ID, permit-number, and request-parameter tampering at the
+   API level, run the existing permission script using the owner-only credential
+   file printed by the named setup:
+
+   ```sh
+   pnpm --filter @workspace/api-server exec node scripts/check-permissions.mjs --credentials-file /tmp/permit-demo-EXAMPLE.json
+   ```
+
+No passwords are included in these instructions or public responses.
+
 After applying the additive database schema in the intended environment, run:
 
 ```sh
