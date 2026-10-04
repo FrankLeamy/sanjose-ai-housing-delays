@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { isStaffRole } from "@/lib/roles";
 
 const loginSchema = z.object({
+  accountType: z.enum(["resident", "city_staff"]),
   username: z.string().trim().min(1, "Enter your username."),
   password: z.string().min(1, "Enter your password."),
 });
@@ -26,8 +27,9 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { username: "", password: "" },
+    defaultValues: { accountType: "resident", username: "", password: "" },
   });
+  const accountType = form.watch("accountType");
 
   useEffect(() => {
     document.title = "Log in | Permit Correction Helper";
@@ -43,6 +45,8 @@ export default function LoginPage() {
     } catch (error) {
       setServerError((error as { status?: number })?.status === 401
         ? "That username and password don't match. Check your details and try again."
+        : (error as { status?: number })?.status === 403
+        ? "This account doesn't match the selected account type. Choose the correct type and try again."
         : "We couldn't log you in right now. Please try again.");
     }
   }
@@ -55,7 +59,7 @@ export default function LoginPage() {
           <span className="font-serif text-lg font-semibold tracking-tight">Permit Correction Helper</span>
         </Link>
         <Link href="/signup" data-testid="link-signup-header" className="hidden text-sm font-semibold text-primary underline-offset-4 hover:underline sm:inline">
-          Create account
+          Create resident account
         </Link>
       </header>
 
@@ -87,6 +91,36 @@ export default function LoginPage() {
           </div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-5">
+              <FormField control={form.control} name="accountType" render={({ field }) => (
+                <FormItem>
+                  <fieldset disabled={login.isPending}>
+                    <legend className="mb-2 text-sm font-semibold">Log in as</legend>
+                    <div className="grid grid-cols-2 gap-3">
+                      {([
+                        ["resident", "Resident"],
+                        ["city_staff", "City Staff"],
+                      ] as const).map(([value, label]) => (
+                        <label key={value} className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-3 text-sm font-medium ${field.value === value ? "border-primary bg-primary/5 text-primary" : "border-input bg-background/60"}`}>
+                          <input
+                            type="radio"
+                            name={field.name}
+                            value={value}
+                            checked={field.value === value}
+                            onChange={() => { field.onChange(value); setServerError(""); }}
+                            onBlur={field.onBlur}
+                            ref={value === "resident" ? field.ref : undefined}
+                            data-testid={`radio-account-${value}`}
+                            className="h-4 w-4 accent-primary"
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <p className="text-xs text-muted-foreground">Your saved account role determines access. This choice does not change it.</p>
+                  <FormMessage />
+                </FormItem>
+              )} />
               <FormField control={form.control} name="username" render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-sm font-semibold">Username</FormLabel>
@@ -118,7 +152,9 @@ export default function LoginPage() {
             </form>
           </Form>
           <p className="mt-6 border-t border-border pt-5 text-center text-sm text-muted-foreground">
-            Don't have an account? <Link href="/signup" data-testid="link-signup" className="font-semibold text-primary underline-offset-4 hover:underline">Sign up</Link>
+            {accountType === "city_staff" ? "City Staff accounts are created by an administrator." : (
+              <>Don't have a resident account? <Link href="/signup" data-testid="link-signup" className="font-semibold text-primary underline-offset-4 hover:underline">Sign up</Link></>
+            )}
           </p>
         </div>
       </main>

@@ -48,7 +48,8 @@ export const logInBodyPasswordMax = 128;
 
 export const LogInBody = zod.object({
   "username": zod.string().min(logInBodyUsernameMin).max(logInBodyUsernameMax).regex(logInBodyUsernameRegExp),
-  "password": zod.string().min(logInBodyPasswordMin).max(logInBodyPasswordMax)
+  "password": zod.string().min(logInBodyPasswordMin).max(logInBodyPasswordMax),
+  "accountType": zod.enum(['resident', 'city_staff']).optional().describe('Optional account-type check, never used to assign or change the database role.')
 })
 
 export const LogInResponse = zod.object({

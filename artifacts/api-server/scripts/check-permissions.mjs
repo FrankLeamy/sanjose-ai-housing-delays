@@ -24,7 +24,14 @@ const client = () => {
 };
 const staff = client(), a = client(), b = client(), anonymous = client();
 for (const [request, account] of [[staff, accounts[0]], [a, accounts[1]], [b, accounts[2]]]) {
-  const result = await request("/login", "POST", { username: account.username, password: account.password });
+  const accountType = account.role === "resident" ? "resident" : "city_staff";
+  const wrongType = client();
+  assert.equal((await wrongType("/login", "POST", {
+    username: account.username, password: account.password,
+    accountType: accountType === "resident" ? "city_staff" : "resident",
+  })).status, 403);
+  assert.equal((await wrongType("/me")).body, null, "Wrong account type must not create a session.");
+  const result = await request("/login", "POST", { username: account.username, password: account.password, accountType });
   assert.equal(result.status, 200);
   assert.equal(result.body.role, account.role);
   assert.ok(!("passwordHash" in result.body));
@@ -83,10 +90,12 @@ for (const [path, filters] of [
 assert.equal((await staff("/staff/submissions?fromDate=1970-01-01&toDate=2100-01-01")).status, 200);
 assert.equal((await staff("/staff/submissions?fromDate=2026-02-30")).status, 400);
 assert.equal((await staff("/staff/submissions?fromDate=2026-10-02&toDate=2026-10-01")).status, 400);
+assert.equal((await staff("/reports")).status, 403, "Resident Past Reports must not be available to staff.");
 for (const [resident, username] of [[a, accounts[1].username], [b, accounts[2].username]]) {
   const reports = (await resident("/reports")).body;
-  const everyone = (await staff("/reports")).body;
-  assert.ok(reports.every((row) => everyone.some((entry) => entry.id === row.id)));
+  for (const report of reports) {
+    assert.equal((await staff(`/reports/${report.id}`)).status, 200, "Staff can still review submitted report details.");
+  }
   const otherReports = (await (username === accounts[1].username ? b : a)("/reports")).body;
   for (const report of otherReports) {
     assert.equal((await resident(`/reports/${report.id}`)).status, 403);

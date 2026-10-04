@@ -191,10 +191,14 @@ router.post("/analyze", async (req, res): Promise<void> => {
 });
 
 router.get("/reports", async (req, res): Promise<void> => {
+  if (req.authUser!.role !== "resident") {
+    res.status(403).json({ error: "Past Reports is for resident accounts. Review submissions in the City Staff Dashboard." });
+    return;
+  }
   const reports = await db
     .select()
     .from(reportsTable)
-    .where(isStaffRole(req.authUser!.role) ? undefined : eq(reportsTable.userId, req.authUser!.id))
+    .where(eq(reportsTable.userId, req.authUser!.id))
     .orderBy(desc(reportsTable.createdAt), desc(reportsTable.id));
   res.json(ListReportsResponse.parse(reports));
 });

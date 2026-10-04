@@ -9,6 +9,7 @@ import {
   SignUpBody,
   SignUpResponse,
 } from "@workspace/api-zod";
+import { isStaffRole } from "../lib/roles";
 
 const router: IRouter = Router();
 
@@ -56,7 +57,7 @@ router.post("/signup", async (req, res): Promise<void> => {
 });
 
 router.post("/login", async (req, res): Promise<void> => {
-  const input = LogInBody.safeParse(req.body);
+  const input = LogInBody.strict().safeParse(req.body);
   if (!input.success) {
     res.status(401).json({ error: "Incorrect username or password." });
     return;
@@ -64,6 +65,11 @@ router.post("/login", async (req, res): Promise<void> => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.username, input.data.username));
   if (!user || !(await bcrypt.compare(input.data.password, user.passwordHash))) {
     res.status(401).json({ error: "Incorrect username or password." });
+    return;
+  }
+  const accountType = isStaffRole(user.role) ? "city_staff" : user.role === "resident" ? "resident" : null;
+  if (!accountType || (input.data.accountType && input.data.accountType !== accountType)) {
+    res.status(403).json({ error: "This account does not match the selected account type. Choose the correct type and try again." });
     return;
   }
   await startSession(req, user.id);

@@ -49,7 +49,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AuthInput"
+              $ref: "#/components/schemas/LoginInput"
       responses:
         "200":
           description: Session started
@@ -378,6 +378,17 @@ components:
       properties:
         username: { type: string, minLength: 3, maxLength: 30, pattern: "^[a-zA-Z0-9_]+$" }
         password: { type: string, minLength: 8, maxLength: 128 }
+      required: [username, password]
+      additionalProperties: false
+    LoginInput:
+      type: object
+      properties:
+        username: { type: string, minLength: 3, maxLength: 30, pattern: "^[a-zA-Z0-9_]+$" }
+        password: { type: string, minLength: 8, maxLength: 128 }
+        accountType:
+          type: string
+          enum: [resident, city_staff]
+          description: Optional account-type check, never used to assign or change the database role.
       required: [username, password]
       additionalProperties: false
     AuthUser:

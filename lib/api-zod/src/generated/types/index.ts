@@ -16,6 +16,8 @@ export * from './documentInputContentType';
 export * from './documentUpload';
 export * from './healthStatus';
 export * from './listStaffSubmissionsParams';
+export * from './loginInput';
+export * from './loginInputAccountType';
 export * from './noteInput';
 export * from './notification';
 export * from './permitQuestion';

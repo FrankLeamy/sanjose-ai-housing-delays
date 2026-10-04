@@ -14,6 +14,14 @@ Opening a resident dashboard URL as staff redirects to `/staff`; submission
 detail URLs redirect to the corresponding staff review. Linked reports remain
 available within staff routes.
 
+Login offers **Resident** and **City Staff** choices. The server checks the chosen
+type against the database role after verifying the password and before starting
+a session. Choosing a type never assigns or changes a role; a mismatch is rejected.
+The optional API field preserves compatibility with existing credential-only
+clients, which still receive access based solely on the database role.
+The resident Past Reports list API rejects staff accounts; individual submitted
+report details remain available for staff review.
+
 Residents retain the existing Home layout and resident navigation. Their private
 lists and detail endpoints enforce ownership; staff routes and internal notes are
 denied server-side. Role parameters in a URL or request do not grant privileges.

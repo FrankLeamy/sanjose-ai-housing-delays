@@ -26,7 +26,7 @@ tab while retaining the Home section, current layout, and all submission data.
 features. Removing navigation must not remove underlying records or capabilities.
 
 Staff and residents must use separate dashboard navigation. Staff/admin users
-must not see resident Home or History sections, even through a direct URL.
+must not see resident Home, History, or Past Reports sections, even through a direct URL.
 Residents retain their existing dashboard and can see only their own private data.
 
 **Why:** The user explicitly clarified that a shared header exposing resident
@@ -36,3 +36,13 @@ existing data and layout.
 **How to apply:** Keep role-specific navigation and routing while preserving
 resident features and staff review tools. Database-loaded roles, not client inputs,
 must remain authoritative for all private data and internal-note permissions.
+
+There are two user-facing account types: City Staff (reviewers) and Residents
+(people who submit). Login must offer a choice between these types.
+
+**Why:** The user explicitly described these two account types and requested
+a login choice, while retaining database-authoritative roles and existing accounts.
+
+**How to apply:** Keep these two labels in account-facing UX; internal staff/admin
+role aliases must not introduce extra public account categories or self-service
+staff promotion.

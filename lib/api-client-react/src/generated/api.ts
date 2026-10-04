@@ -27,6 +27,7 @@ import type {
   DocumentUpload,
   HealthStatus,
   ListStaffSubmissionsParams,
+  LoginInput,
   NoteInput,
   Notification,
   PermitQuestion,
@@ -231,7 +232,7 @@ export const getLogInUrl = () => {
   return `/api/login`
 }
 
-export const logIn = async (authInput: AuthInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthUser> => {
+export const logIn = async (loginInput: LoginInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthUser> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -252,7 +253,7 @@ return customFetch<AuthUser>(getLogInUrl(),
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(authInput)
+    body: JSON.stringify(loginInput)
   }
 );}
 
@@ -290,9 +291,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type LogInMutationResult = NonNullable<Awaited<ReturnType<typeof logIn>>>
-    export type LogInMutationBody = BodyType<AuthInput>
+    export type LogInMutationBody = BodyType<LoginInput>
     export type LogInMutationError = ErrorType<unknown>
-    export type LogInMutationVariables = {data: BodyType<AuthInput>}
+    export type LogInMutationVariables = {data: BodyType<LoginInput>}
 
     export const useLogIn = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logIn>>, TError,LogInMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

@@ -19,6 +19,33 @@ export interface AuthInput {
   password: string;
 }
 
+/**
+ * Optional account-type check, never used to assign or change the database role.
+ */
+export type LoginInputAccountType = typeof LoginInputAccountType[keyof typeof LoginInputAccountType];
+
+
+export const LoginInputAccountType = {
+  resident: 'resident',
+  city_staff: 'city_staff',
+} as const;
+
+export interface LoginInput {
+  /**
+     * @minLength 3
+     * @maxLength 30
+     * @pattern ^[a-zA-Z0-9_]+$
+     */
+  username: string;
+  /**
+     * @minLength 8
+     * @maxLength 128
+     */
+  password: string;
+  /** Optional account-type check, never used to assign or change the database role. */
+  accountType?: LoginInputAccountType;
+}
+
 export type AuthUserRole = typeof AuthUserRole[keyof typeof AuthUserRole];
 
 
