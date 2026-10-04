@@ -15,6 +15,10 @@ test("Account seed preserves hashes and staff aliases, avoids overwrites, and gu
     assert.ok(sql.includes(accounts[0].password_hash));
     assert.ok(sql.includes(accounts[1].password_hash));
     assert.ok(sql.includes(`'${role}'`));
+    assert.ok(sql.includes(`'${role}'::public.user_role`));
+    assert.ok(sql.includes("'resident'::public.user_role"));
+    assert.ok(sql.includes("existing.role IS DISTINCT FROM expected.role"));
+    assert.ok(sql.includes("END;\n$demo_seed_guard$;"));
     assert.ok(sql.includes("ON CONFLICT (username) DO NOTHING"));
     assert.ok(sql.includes("existing.password_hash IS DISTINCT FROM expected.password_hash"));
     assert.ok(sql.includes("lower(existing.email) = lower(expected.email)"));
@@ -43,4 +47,13 @@ test("Account seed escapes quoted profile metadata", () => {
   const sql = buildAccountSeed(accounts);
   assert.ok(sql.includes("'Resident''s demo'"));
   assert.ok(sql.includes("'resident''quoted@example.com'"));
+});
+
+test("Account metadata cannot terminate the anonymous SQL guard", () => {
+  const accounts = fixtures();
+  accounts[1].email = "resident$demo_seed_guard$@example.com";
+  const sql = buildAccountSeed(accounts);
+  assert.ok(sql.includes("DO $demo_seed_guard_1$\n"));
+  assert.ok(sql.includes("END;\n$demo_seed_guard_1$;"));
+  assert.ok(sql.includes("'resident$demo_seed_guard$@example.com'"));
 });

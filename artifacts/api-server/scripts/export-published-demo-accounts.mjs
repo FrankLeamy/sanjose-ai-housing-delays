@@ -23,17 +23,12 @@ export function buildAccountSeed(accounts) {
     }
   }
   const ordered = usernames.map((username) => accounts.find((row) => row.username === username));
+  const roleLiteral = (role) => `${sqlLiteral(role)}::public.user_role`;
   const identityRows = ordered.map((account) =>
-    `(${[account.username, account.email, account.role, account.password_hash].map(sqlLiteral).join(", ")})`).join(",\n      ");
+    `(${sqlLiteral(account.username)}, ${sqlLiteral(account.email)}, ${roleLiteral(account.role)}, ${sqlLiteral(account.password_hash)})`).join(",\n      ");
   const insertRows = ordered.map((account) =>
-    `(${[account.username, account.password_hash, account.role, account.display_name, account.email].map(sqlLiteral).join(", ")}, TRUE)`).join(",\n  ");
-  return `-- CONFIDENTIAL: contains password verifiers, never plaintext passwords.
--- Run manually in the PRODUCTION database SQL editor. Do not commit or share.
-BEGIN;
-SET LOCAL standard_conforming_strings = on;
-LOCK TABLE public.users IN SHARE ROW EXCLUSIVE MODE;
-DO $demo_seed_guard$
-BEGIN
+    `(${sqlLiteral(account.username)}, ${sqlLiteral(account.password_hash)}, ${roleLiteral(account.role)}, ${sqlLiteral(account.display_name)}, ${sqlLiteral(account.email)}, TRUE)`).join(",\n  ");
+  const guardBody = `BEGIN
   IF EXISTS (
     SELECT 1 FROM public.users AS existing
     JOIN (VALUES
@@ -43,14 +38,28 @@ BEGIN
       OR lower(existing.email) = lower(expected.email)
     WHERE existing.username IS DISTINCT FROM expected.username
        OR existing.email IS DISTINCT FROM expected.email
-       OR existing.role::text IS DISTINCT FROM expected.role
+       OR existing.role IS DISTINCT FROM expected.role
        OR existing.password_hash IS DISTINCT FROM expected.password_hash
        OR existing.is_demo IS DISTINCT FROM TRUE
   ) THEN
     RAISE EXCEPTION 'An existing account conflicts with the Preview identity or credentials. Nothing was changed.';
   END IF;
-END
-$demo_seed_guard$;
+END;`;
+  // A dollar tag inside quoted metadata would otherwise terminate the DO body.
+  let guardTag = "$demo_seed_guard$";
+  let tagNumber = 0;
+  while (guardBody.includes(guardTag)) {
+    guardTag = `$demo_seed_guard_${++tagNumber}$`;
+  }
+  return `-- CONFIDENTIAL: contains password verifiers, never plaintext passwords.
+-- Run the complete script in the PRODUCTION database SQL editor. Do not commit or share.
+-- If an earlier console transaction failed, run ROLLBACK separately before retrying.
+BEGIN;
+SET LOCAL standard_conforming_strings = on;
+LOCK TABLE public.users IN SHARE ROW EXCLUSIVE MODE;
+DO ${guardTag}
+${guardBody}
+${guardTag};
 INSERT INTO public.users (username, password_hash, role, display_name, email, is_demo)
 VALUES
   ${insertRows}
