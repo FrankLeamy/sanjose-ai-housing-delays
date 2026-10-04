@@ -150,6 +150,31 @@ The existing correction-report analysis remains the prototype's simulated analys
 
 ## Repeatable permission checks
 
+### Copy only the named demo accounts into Production
+
+The agent's managed production database connection is read-only. To prepare a
+private, data-only SQL import from the current Preview account records, run:
+
+```sh
+NODE_ENV=development pnpm --filter @workspace/api-server exec node scripts/export-published-demo-accounts.mjs
+```
+
+This writes an owner-only SQL file under `/tmp`, outside the repository. It copies
+only the two named accounts' existing bcrypt verifiers, emails, profile names,
+and roles, without displaying passwords or changing Preview. Login uses usernames,
+not the email metadata. Do not run demo setup or reset passwords for this transfer.
+
+Run the generated file manually in the **Production** database SQL editor.
+The import creates only missing accounts, skips identical existing accounts, and
+aborts if a username/email, role, or password verifier conflicts. It changes no
+existing users, submissions, permit data, or schema. Treat the SQL as confidential
+and delete the temporary file after import. Never add it to source control,
+serve it over HTTP, or attach it as a public download. No seeding runs at startup.
+
+After import, verify both named logins against the published URL and confirm the
+staff queue and resident ownership restrictions. A publishing-password gate is
+separate from application login and must be passed before that verification.
+
 After creating the demo accounts, use the temporary credential-file path printed
 by setup (do not paste passwords into commands):
 

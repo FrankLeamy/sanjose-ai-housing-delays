@@ -1,3 +1,4 @@
 - [Permit assistant AI provider](permit-assistant-ai-provider.md) — the user chose their own OpenAI key after managed setup required phone verification.
 - [Legacy question ownership](legacy-question-ownership.md) — pre-account questions cannot be safely attributed to a new user.
 - [Permit preservation scope](permit-preservation-scope.md) — role changes must preserve the existing resident layout, features, records, data and authentication.
+- [Demo environments](permit-demo-environments.md) — preserve demo credentials and roles without connecting Published to Preview or adding public provisioning.
