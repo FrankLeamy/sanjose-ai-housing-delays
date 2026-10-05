@@ -146,7 +146,20 @@ API responses are marked private and non-cacheable. Browser writes must be
 same-origin, including behind Replit's preview proxy.
 
 Review statuses are application workflow labels, **not official permit approval**.
-The existing correction-report analysis remains the prototype's simulated analysis.
+Sample reports remain simulated examples. Uploaded files no longer use filename-based
+sample feedback. Readable PDFs receive limited text screening for explicitly labelled
+measurement conflicts, safety statements, and quoted correction requests. Reports
+cite page numbers and retain human-review warnings in saved and printed views.
+This screening is not comprehensive engineering verification or permit approval.
+Images, scanned/unreadable pages, encrypted/corrupt PDFs, and documents over 100 pages
+are explicitly referred for human review. No external AI service is used for this
+screening. Human-review warnings cannot be cleared using a completion checkbox.
+
+Run the extraction and conflict-screening regression tests with:
+
+```sh
+pnpm --filter @workspace/api-server exec node --experimental-strip-types --test tests/document-screening.test.ts
+```
 
 ## Repeatable permission checks
 

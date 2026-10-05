@@ -16,6 +16,8 @@ import {
 } from "@workspace/api-zod";
 import { prepareDocuments, saveSubmission, SubmissionInputError } from "../lib/submission-service";
 import { isStaffRole } from "../lib/roles";
+import { analyzeUploadedDocument } from "../lib/analyze-upload";
+import { HUMAN_REVIEW_CATEGORIES } from "../lib/document-screening";
 
 type Item = {
   id: number;
@@ -151,10 +153,11 @@ router.post("/analyze", async (req, res): Promise<void> => {
 
   try {
   const documents = await prepareDocuments(input.data.documentId ? [input.data.documentId] : [], req.authUser!.id);
-  const needsFixes =
-    input.data.sampleId === "needs-fixes" ||
-    (documents[0]?.name.toLowerCase().includes("fix") ?? false);
-  const draft = buildReport(needsFixes, 0);
+   const needsFixes = input.data.sampleId === "needs-fixes";
+   const draft = documents[0]
+     ? await analyzeUploadedDocument(documents[0])
+     : buildReport(needsFixes, 0);
+   const humanReview = draft.items.some((item) => HUMAN_REVIEW_CATEGORIES.includes(item.category));
   const report = await db.transaction(async (tx) => {
     const [created] = await tx
       .insert(reportsTable)
@@ -167,12 +170,14 @@ router.post("/analyze", async (req, res): Promise<void> => {
       .returning();
     const [saved] = await tx
       .update(reportsTable)
-      .set({ items: buildReport(needsFixes, created.id).items })
+       .set({ items: draft.items.map((item, index) => ({ ...item, id: created.id * 100 + index + 1 })) })
       .where(eq(reportsTable.id, created.id))
       .returning();
     await tx.insert(notificationsTable).values({
       userId: req.session.userId!,
-      message: needsFixes
+       message: humanReview
+         ? "Human review required. Check the document conflicts and safety warnings in your report."
+         : draft.items.some((item) => item.status === "needs_fix")
         ? "Your submission needs changes. See the items below."
         : "Good news! Your submission appears complete.",
     });
@@ -261,6 +266,10 @@ router.patch("/reports/:reportId/items/:itemId", async (req, res): Promise<void>
     res.status(404).json({ error: "Checklist item not found." });
     return;
   }
+   if (body.data.completed && HUMAN_REVIEW_CATEGORIES.includes(item.category)) {
+     res.status(400).json({ error: "Human-review warnings cannot be cleared with a checklist checkbox. Ask the City reviewer or responsible licensed professional to verify the document." });
+     return;
+   }
   const items = report.items.map((candidate) =>
     candidate.id === item.id ? { ...candidate, completed: body.data.completed } : candidate,
   );

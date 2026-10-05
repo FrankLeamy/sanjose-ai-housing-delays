@@ -225,7 +225,7 @@ function UploadFlow({ onReportGenerated }: { onReportGenerated: (id: number) => 
         <div className="max-w-md space-y-2">
           <h2 className="text-2xl font-serif font-medium">Analyzing Correction Letter...</h2>
           <p className="text-muted-foreground">
-            Our AI is reading your document, classifying required actions by department, and clarifying confusing planner jargon.
+            Screening readable text for measurement conflicts, safety information, and correction requests. Unreadable content will be referred for human review.
           </p>
         </div>
         <Progress value={65} className="w-64" />
@@ -415,17 +415,20 @@ function ReportContent({ report, reportId, onReset, updateItem, queryClient }: {
   };
 
   const departments = Array.from(new Set(report.items.map((i: ReportItem) => i.department)));
+  const humanReviewItems = report.items.filter((i: ReportItem) =>
+    ["Measurement conflict", "Safety review", "Document review"].includes(i.category));
+  const needsHumanReview = humanReviewItems.length > 0;
   const totalNeedsFix = report.items.filter((i: ReportItem) => i.status === 'needs_fix').length;
   const completedNeedsFix = report.items.filter((i: ReportItem) => i.status === 'needs_fix' && i.completed).length;
   const progress = totalNeedsFix === 0 ? 100 : Math.round((completedNeedsFix / totalNeedsFix) * 100);
   const prevProgress = useRef<number>(progress);
 
   useEffect(() => {
-    if (progress === 100 && prevProgress.current < 100) {
+    if (!needsHumanReview && progress === 100 && prevProgress.current < 100) {
       setShowSuccessDialog(true);
     }
     prevProgress.current = progress;
-  }, [progress]);
+  }, [progress, needsHumanReview]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-24">
@@ -472,6 +475,13 @@ function ReportContent({ report, reportId, onReset, updateItem, queryClient }: {
           </Button>
         </div>
       </div>
+
+      {needsHumanReview && (
+        <div role="alert" data-testid="human-review-warning" className="rounded-lg border border-amber-500/50 bg-amber-50 p-5 text-amber-950 print-break-inside-avoid">
+          <h2 className="flex items-center gap-2 font-semibold"><ShieldAlert className="h-5 w-5" /> Human review required</h2>
+          <p className="mt-2 text-sm">Conflicting, safety-related, or unreadable information needs review by City staff and the responsible licensed professional. Do not select a measurement or assume safety or approval from this checklist. These warnings cannot be cleared by checking a box.</p>
+        </div>
+      )}
 
       {totalNeedsFix > 0 && (
         <Card className="bg-primary/5 border-primary/20 no-print">
@@ -528,6 +538,8 @@ function ReportContent({ report, reportId, onReset, updateItem, queryClient }: {
                             <div className="pt-0.5 no-print">
                               <Checkbox 
                                 checked={item.completed}
+                                disabled={["Measurement conflict", "Safety review", "Document review"].includes(item.category)}
+                                aria-label={["Measurement conflict", "Safety review", "Document review"].includes(item.category) ? "Requires human review; cannot mark complete" : "Mark correction complete"}
                                 onCheckedChange={(c) => handleToggleComplete(item.id, c === true)}
                                 className={item.completed ? "data-[state=checked]:bg-muted-foreground data-[state=checked]:text-muted-foreground-foreground border-muted-foreground" : ""}
                               />
@@ -537,7 +549,7 @@ function ReportContent({ report, reportId, onReset, updateItem, queryClient }: {
                                 <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">{item.category}</Badge>
                                 {item.unclear && (
                                   <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200 gap-1 px-1.5 py-0">
-                                    <HelpCircle className="w-3 h-3" /> Unclear Jargon
+                                    <HelpCircle className="w-3 h-3" /> {["Measurement conflict", "Safety review", "Document review"].includes(item.category) ? "Human review" : "Unclear Jargon"}
                                   </Badge>
                                 )}
                               </div>
@@ -546,7 +558,7 @@ function ReportContent({ report, reportId, onReset, updateItem, queryClient }: {
                               </p>
                               <div className="mt-3 p-3 bg-primary/5 rounded-md border border-primary/10 relative">
                                 <div className="absolute -left-1.5 top-3 w-3 h-3 bg-background border border-primary/20 rotate-45" />
-                                <span className="text-xs font-semibold text-primary uppercase block mb-1">How to fix</span>
+                                <span className="text-xs font-semibold text-primary uppercase block mb-1">{["Measurement conflict", "Safety review", "Document review"].includes(item.category) ? "Required human review" : "How to fix"}</span>
                                 <p className="text-sm text-foreground/80">{item.howToFix}</p>
                               </div>
                             </div>
