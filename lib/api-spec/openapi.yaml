@@ -149,6 +149,26 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PublicPermit"
+  /public-permits/{permitNumber}:
+    get:
+      operationId: getPublicPermitDetails
+      tags: [permits]
+      parameters:
+        - in: path
+          name: permitNumber
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Readable public fields fetched from the official City record; no owner details or internal identifiers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicPermitDetails"
+        "404":
+          description: Permit record is unavailable
+        "502":
+          description: City record could not be loaded
   /reports/{reportId}/items/{itemId}:
     patch:
       operationId: updateReportItem
@@ -457,6 +477,21 @@ components:
         source: { type: string }
         dataLabel: { type: string }
       required: [permitNumber, address, housingType, projectDescription, permitType, status, issuedDate, finalDate, permitApprovals, sourceUrl, source, dataLabel]
+    PublicPermitDetails:
+      type: object
+      properties:
+        permitNumber: { type: string }
+        status: { type: ["string", "null"] }
+        address: { type: string }
+        projectDescription: { type: ["string", "null"] }
+        workDescription: { type: ["string", "null"] }
+        approvalStatus: { type: ["string", "null"] }
+        issueDate: { type: ["string", "null"], format: date }
+        finalDate: { type: ["string", "null"], format: date }
+        dwellingUnits: { type: ["integer", "null"] }
+        squareFootage: { type: ["number", "null"] }
+        valuation: { type: ["number", "null"] }
+      required: [permitNumber, status, address, projectDescription, workDescription, approvalStatus, issueDate, finalDate, dwellingUnits, squareFootage, valuation]
     ReportItem:
       type: object
       properties:

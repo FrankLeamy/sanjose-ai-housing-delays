@@ -25,6 +25,7 @@ export * from './permitQuestionInput';
 export * from './permitReport';
 export * from './progressUpdate';
 export * from './publicPermit';
+export * from './publicPermitDetails';
 export * from './reportItem';
 export * from './reportItemStatus';
 export * from './reviewInput';

@@ -3,3 +3,4 @@
 - [Permit preservation scope](permit-preservation-scope.md) — role changes must preserve the existing resident layout, features, records, data and authentication.
 - [Demo environments](permit-demo-environments.md) — preserve demo credentials and roles without connecting Published to Preview or adding public provisioning.
 - [Document safety](permit-document-safety.md) — identify measurement conflicts and safety concerns with evidence; recommend human review, never infer approval.
+- [Calendar dates](openapi-calendar-dates.md) — generated validators may turn date-only strings into timestamps; verify the wire format and display together.

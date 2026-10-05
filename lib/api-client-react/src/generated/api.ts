@@ -35,6 +35,7 @@ import type {
   PermitReport,
   ProgressUpdate,
   PublicPermit,
+  PublicPermitDetails,
   ReportItem,
   ReviewInput,
   SampleLetter,
@@ -799,6 +800,77 @@ export function useListPublicPermits<TData = Awaited<ReturnType<typeof listPubli
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListPublicPermitsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetPublicPermitDetailsUrl = (permitNumber: string,) => {
+
+
+
+
+  return `/api/public-permits/${permitNumber}`
+}
+
+export const getPublicPermitDetails = async (permitNumber: string, options?: Parameters<typeof customFetch>[1]): Promise<PublicPermitDetails> => {
+
+  return customFetch<PublicPermitDetails>(getGetPublicPermitDetailsUrl(permitNumber),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublicPermitDetailsQueryKey = (permitNumber: string,) => {
+    return [
+    `/api/public-permits/${permitNumber}`
+    ] as const;
+    }
+
+
+export const getGetPublicPermitDetailsQueryOptions = <TData = Awaited<ReturnType<typeof getPublicPermitDetails>>, TError = ErrorType<void>>(permitNumber: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicPermitDetails>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicPermitDetailsQueryKey(permitNumber);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicPermitDetails>>> = ({ signal }) => getPublicPermitDetails(permitNumber, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: permitNumber !== null && permitNumber !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicPermitDetails>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicPermitDetailsQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicPermitDetails>>>
+export type GetPublicPermitDetailsQueryError = ErrorType<void>
+
+
+
+export function useGetPublicPermitDetails<TData = Awaited<ReturnType<typeof getPublicPermitDetails>>, TError = ErrorType<void>>(
+ permitNumber: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicPermitDetails>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicPermitDetailsQueryOptions(permitNumber,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -124,6 +124,29 @@ export interface PublicPermit {
   dataLabel: string;
 }
 
+export interface PublicPermitDetails {
+  permitNumber: string;
+  /** @nullable */
+  status: string | null;
+  address: string;
+  /** @nullable */
+  projectDescription: string | null;
+  /** @nullable */
+  workDescription: string | null;
+  /** @nullable */
+  approvalStatus: string | null;
+  /** @nullable */
+  issueDate: string | null;
+  /** @nullable */
+  finalDate: string | null;
+  /** @nullable */
+  dwellingUnits: number | null;
+  /** @nullable */
+  squareFootage: number | null;
+  /** @nullable */
+  valuation: number | null;
+}
+
 export interface ProgressUpdate {
   completed: boolean;
 }

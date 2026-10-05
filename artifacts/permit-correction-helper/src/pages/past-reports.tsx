@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { ArrowRight, CalendarDays, ChevronRight, FileText, FolderOpen, RefreshCw } from "lucide-react";
 import { Link } from "wouter";
@@ -6,6 +6,7 @@ import { useListPublicPermits, useListReports } from "@workspace/api-client-reac
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TopNav } from "@/pages/home";
+import { PermitDetailsDialog } from "@/components/permit-details-dialog";
 
 function readableDate(date: string) {
   const parsed = new Date(date);
@@ -13,6 +14,7 @@ function readableDate(date: string) {
 }
 
 export default function PastReportsPage() {
+  const [selectedPermit, setSelectedPermit] = useState<string | null>(null);
   const { data: reports, isLoading, isError, refetch, isFetching } = useListReports();
   const { data: publicPermits, isError: publicPermitsError } = useListPublicPermits();
   const sortedReports = reports ? [...reports].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) : [];
@@ -129,14 +131,15 @@ export default function PastReportsPage() {
                 <p className="mt-3 text-xs text-muted-foreground">
                   {permit.permitType} · Status at publication: {permit.status} · Issued: {permit.issuedDate ?? "Not available"}
                 </p>
-                <a href={permit.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-primary underline-offset-4 hover:underline">
+                <button type="button" onClick={() => setSelectedPermit(permit.permitNumber)} data-testid="open-permit-details" className="mt-3 inline-block text-left text-sm font-semibold text-primary underline-offset-4 hover:underline">
                   View official City record for {permit.permitNumber}
-                </a>
+                </button>
               </article>
             ))}
           </div>
         </section>
       </main>
+      {selectedPermit && <PermitDetailsDialog permitNumber={selectedPermit} onClose={() => setSelectedPermit(null)} />}
     </div>
   );
 }

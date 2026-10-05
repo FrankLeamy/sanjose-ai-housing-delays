@@ -10,6 +10,7 @@ import {
   ListSamplesResponse,
   ListReportsResponse,
   ListPublicPermitsResponse,
+  GetPublicPermitDetailsResponse,
   UpdateReportItemBody,
   UpdateReportItemParams,
   UpdateReportItemResponse,
@@ -18,6 +19,7 @@ import { prepareDocuments, saveSubmission, SubmissionInputError } from "../lib/s
 import { isStaffRole } from "../lib/roles";
 import { analyzeUploadedDocument } from "../lib/analyze-upload";
 import { HUMAN_REVIEW_CATEGORIES } from "../lib/document-screening";
+import { cityRecordUrl, parseCityPermit } from "../lib/city-permit-details";
 
 type Item = {
   id: number;
@@ -227,6 +229,40 @@ router.get("/public-permits", async (_req, res): Promise<void> => {
     .from(publicPermitsTable)
     .orderBy(asc(publicPermitsTable.displayOrder));
   res.json(ListPublicPermitsResponse.parse(permits));
+});
+
+router.get("/public-permits/:permitNumber", async (req, res): Promise<void> => {
+  const permitNumber = String(req.params.permitNumber);
+  if (permitNumber.length > 100) {
+    res.status(404).json({ error: "This permit record is not available." }); return;
+  }
+  const [permit] = await db.select({
+    permitNumber: publicPermitsTable.permitNumber,
+    address: publicPermitsTable.address,
+    sourceUrl: publicPermitsTable.sourceUrl,
+  }).from(publicPermitsTable).where(eq(publicPermitsTable.permitNumber, permitNumber));
+  if (!permit) {
+    res.status(404).json({ error: "This permit record is not available." }); return;
+  }
+  try {
+    const response = await fetch(cityRecordUrl(permit.sourceUrl, permitNumber), {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(10000),
+      redirect: "error",
+    });
+    if (!response.ok) throw new Error("City record request failed.");
+    const details = parseCityPermit(await response.json(), permitNumber, permit.address);
+    if (!details) {
+      res.status(404).json({ error: "This permit record is no longer available from the City." }); return;
+    }
+    // Generated date validators coerce strings to Date. Validate without changing
+    // the date-only wire format into a timestamp.
+    GetPublicPermitDetailsResponse.parse(details);
+    res.json(details);
+  } catch {
+    req.log.warn({ permitNumber }, "City permit record could not be loaded");
+    res.status(502).json({ error: "The City permit record could not be loaded. Please try again." });
+  }
 });
 
 router.get("/reports/:id", async (req, res): Promise<void> => {

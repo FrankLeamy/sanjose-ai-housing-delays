@@ -46,3 +46,14 @@ a login choice, while retaining database-authoritative roles and existing accoun
 **How to apply:** Keep these two labels in account-facing UX; internal staff/admin
 role aliases must not introduce extra public account categories or self-service
 staff promotion.
+
+Public City permit-record links must open readable details inside the prototype,
+not navigate to the raw City API. Resident views must not expose private owner
+information, raw JSON, internal resource identifiers, or database field labels.
+
+**Why:** The user explicitly requested this for the existing Past reports links,
+with the surrounding layout, records, authentication, and permissions unchanged.
+
+**How to apply:** Fetch and parse official records server-side with an explicit
+public-field allowlist. Display readable labels and a clear load failure inside
+the existing prototype; do not repurpose private saved-report links or History.
