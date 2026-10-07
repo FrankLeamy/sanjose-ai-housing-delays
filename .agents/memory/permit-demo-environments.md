@@ -56,3 +56,14 @@ running the import statements separately.
 **How to apply:** Keep the table lock, conflict guard, insert and verification
 query together in the selected batch. The console message alone is not proof
 that accounts were imported.
+
+A Database pane “Something went wrong” error is not evidence that the SQL
+transaction failed. Check the intended records through a read-only production
+query before recommending another import.
+
+**Why:** The pane showed this error after the private import, while a separate
+read-only production check confirmed both requested account records and roles.
+
+**How to apply:** Distinguish an interface failure from a database failure;
+confirm state before retrying writes, and do not infer password or live-login
+verification from record presence alone.
