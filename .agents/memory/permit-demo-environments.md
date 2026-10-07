@@ -42,3 +42,17 @@ cookie policy can therefore fail an overly literal Preview-header assertion.
 **How to apply:** Filter the application session cookie rather than assuming it
 is the first Set-Cookie header. Accept Preview's None only when paired with
 Secure; separately verify the production-mode cookie flags.
+
+When the production SQL console instructs the user to select multiple statements
+for an automatically wrapped transaction, omit only the import's outer
+`BEGIN;` and `COMMIT;`, select the complete remaining import, and run it as one
+batch. Keep the `BEGIN` inside a dollar-quoted `DO` block intact.
+
+**Why:** The user encountered this console instruction when attempting the
+private account import. Documentation about manual transaction support did not
+match the console's instruction; follow the actual interface rather than
+running the import statements separately.
+
+**How to apply:** Keep the table lock, conflict guard, insert and verification
+query together in the selected batch. The console message alone is not proof
+that accounts were imported.
