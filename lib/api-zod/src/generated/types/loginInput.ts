@@ -7,6 +7,9 @@
  */
 import type { LoginInputAccountType } from './loginInputAccountType';
 
+/**
+ * Existing passwords must be 8–128 characters. Only User1 and Staff1, with their designated database roles, have an explicit four-digit numeric password exception. Signup rules are unchanged.
+ */
 export interface LoginInput {
   /**
      * @minLength 3
@@ -14,10 +17,6 @@ export interface LoginInput {
      * @pattern ^[a-zA-Z0-9_]+$
      */
   username: string;
-  /**
-     * @minLength 8
-     * @maxLength 128
-     */
   password: string;
   /** Optional account-type check, never used to assign or change the database role. */
   accountType?: LoginInputAccountType;

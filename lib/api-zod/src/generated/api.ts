@@ -41,16 +41,21 @@ export const logInBodyUsernameMax = 30;
 
 
 export const logInBodyUsernameRegExp = new RegExp('^[a-zA-Z0-9_]+$');
-export const logInBodyPasswordMin = 8;
-export const logInBodyPasswordMax = 128;
+export const logInBodyPasswordOneMin = 8;
+export const logInBodyPasswordOneMax = 128;
 
+export const logInBodyPasswordTwoMin = 4;
+export const logInBodyPasswordTwoMax = 4;
+
+
+export const logInBodyPasswordTwoRegExp = new RegExp('^[0-9]{4}$');
 
 
 export const LogInBody = zod.object({
   "username": zod.string().min(logInBodyUsernameMin).max(logInBodyUsernameMax).regex(logInBodyUsernameRegExp),
-  "password": zod.string().min(logInBodyPasswordMin).max(logInBodyPasswordMax),
+  "password": zod.union([zod.string().min(logInBodyPasswordOneMin).max(logInBodyPasswordOneMax),zod.string().min(logInBodyPasswordTwoMin).max(logInBodyPasswordTwoMax).regex(logInBodyPasswordTwoRegExp)]),
   "accountType": zod.enum(['resident', 'city_staff']).optional().describe('Optional account-type check, never used to assign or change the database role.')
-})
+}).describe('Existing passwords must be 8–128 characters. Only User1 and Staff1, with their designated database roles, have an explicit four-digit numeric password exception. Signup rules are unchanged.')
 
 export const LogInResponse = zod.object({
   "id": zod.number().int(),

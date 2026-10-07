@@ -10,6 +10,7 @@ import {
   SignUpResponse,
 } from "@workspace/api-zod";
 import { isStaffRole } from "../lib/roles";
+import { allowsLoginPassword, allowsShortPasswordRole } from "../lib/login-policy";
 
 const router: IRouter = Router();
 
@@ -58,12 +59,13 @@ router.post("/signup", async (req, res): Promise<void> => {
 
 router.post("/login", async (req, res): Promise<void> => {
   const input = LogInBody.strict().safeParse(req.body);
-  if (!input.success) {
+  if (!input.success || !allowsLoginPassword(input.data.username, input.data.password)) {
     res.status(401).json({ error: "Incorrect username or password." });
     return;
   }
   const [user] = await db.select().from(usersTable).where(eq(usersTable.username, input.data.username));
-  if (!user || !(await bcrypt.compare(input.data.password, user.passwordHash))) {
+  if (!user || !allowsShortPasswordRole(user.username, input.data.password, user.role) ||
+      !(await bcrypt.compare(input.data.password, user.passwordHash))) {
     res.status(401).json({ error: "Incorrect username or password." });
     return;
   }
