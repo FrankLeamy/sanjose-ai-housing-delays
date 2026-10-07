@@ -402,13 +402,10 @@ components:
       additionalProperties: false
     LoginInput:
       type: object
-      description: Existing passwords must be 8–128 characters. Only User1 and Staff1, with their designated database roles, have an explicit four-digit numeric password exception. Signup rules are unchanged.
+      description: Authenticate an existing database account against its stored bcrypt password hash. Login accepts existing credentials without username-specific exceptions; signup password rules are unchanged.
       properties:
-        username: { type: string, minLength: 3, maxLength: 30, pattern: "^[a-zA-Z0-9_]+$" }
-        password:
-          oneOf:
-            - { type: string, minLength: 8, maxLength: 128 }
-            - { type: string, minLength: 4, maxLength: 4, pattern: "^[0-9]{4}$" }
+        username: { type: string, minLength: 1, maxLength: 128 }
+        password: { type: string, minLength: 1, maxLength: 128 }
         accountType:
           type: string
           enum: [resident, city_staff]

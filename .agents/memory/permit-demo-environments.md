@@ -16,15 +16,29 @@ or make account seeding an automatic startup action. Database-read checks and
 secret-existence checks are not proof of a successful published login; report
 unverified production behavior honestly.
 
-For the two explicitly approved production identities, preserve the existing
-schema: the resident uses `resident`, and City Staff access uses the least-
-privileged existing `staff` role, not an administrator role. The user approved a
-four-digit numeric login exception only for those identities and their designated
-roles; keep normal signup and staff-account creation password rules unchanged.
+Preserve the existing schema: residents use `resident`, and ordinary City Staff
+access uses the least-privileged existing `staff` role, not an administrator role.
+Login must authenticate generic database accounts against their stored bcrypt
+verifiers, without hardcoded identity/password exceptions. Keep normal signup and
+staff-account creation password-strength rules unchanged.
 
-**Why:** The requested City Staff label is not a database enum value, and the
-owner chose the existing staff role plus the narrowly scoped login exception.
+**Why:** The requested City Staff label is not a database enum value. The user
+subsequently replaced the named short-password exception with a request for
+database-driven username/password login with no hardcoded identities.
 
-**How to apply:** Never widen this exception to all accounts or persist passwords
-in code, UI, logs, or memory. Production account creation still requires an
+**How to apply:** Verify existing credentials rather than applying signup password
+rules during login; never persist passwords in code, UI, logs, or memory.
+Production account creation still requires an
 explicit private data import; a prepared import is not a completed live login.
+
+Check production session-cookie security in production mode at the native API,
+not solely through Preview's proxy. Preserve HttpOnly, Secure, and SameSite=Lax
+for production.
+
+**Why:** This project's proxied Preview was observed rewriting the app's
+SameSite=Lax cookie to SameSite=None with Secure for iframe use. A correct native
+cookie policy can therefore fail an overly literal Preview-header assertion.
+
+**How to apply:** Filter the application session cookie rather than assuming it
+is the first Set-Cookie header. Accept Preview's None only when paired with
+Secure; separately verify the production-mode cookie flags.

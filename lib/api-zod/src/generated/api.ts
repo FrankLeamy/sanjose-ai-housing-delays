@@ -36,26 +36,17 @@ export const SignUpResponse = zod.object({
 })
 
 
-export const logInBodyUsernameMin = 3;
-export const logInBodyUsernameMax = 30;
+export const logInBodyUsernameMax = 128;
 
+export const logInBodyPasswordMax = 128;
 
-export const logInBodyUsernameRegExp = new RegExp('^[a-zA-Z0-9_]+$');
-export const logInBodyPasswordOneMin = 8;
-export const logInBodyPasswordOneMax = 128;
-
-export const logInBodyPasswordTwoMin = 4;
-export const logInBodyPasswordTwoMax = 4;
-
-
-export const logInBodyPasswordTwoRegExp = new RegExp('^[0-9]{4}$');
 
 
 export const LogInBody = zod.object({
-  "username": zod.string().min(logInBodyUsernameMin).max(logInBodyUsernameMax).regex(logInBodyUsernameRegExp),
-  "password": zod.union([zod.string().min(logInBodyPasswordOneMin).max(logInBodyPasswordOneMax),zod.string().min(logInBodyPasswordTwoMin).max(logInBodyPasswordTwoMax).regex(logInBodyPasswordTwoRegExp)]),
+  "username": zod.string().min(1).max(logInBodyUsernameMax),
+  "password": zod.string().min(1).max(logInBodyPasswordMax),
   "accountType": zod.enum(['resident', 'city_staff']).optional().describe('Optional account-type check, never used to assign or change the database role.')
-}).describe('Existing passwords must be 8–128 characters. Only User1 and Staff1, with their designated database roles, have an explicit four-digit numeric password exception. Signup rules are unchanged.')
+}).describe('Authenticate an existing database account against its stored bcrypt password hash. Login accepts existing credentials without username-specific exceptions; signup password rules are unchanged.')
 
 export const LogInResponse = zod.object({
   "id": zod.number().int(),
