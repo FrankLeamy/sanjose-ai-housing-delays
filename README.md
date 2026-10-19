@@ -2,7 +2,7 @@
 
 Client: City of San José, City Housing
 Team: Frank Leamy, Gabrielle Yang, Jet Lau, Anthony Trujillo, Matthew Throne, Aug–Oct 2026
-My part: I contributed to the project's research and analysis and built the login and dashboard pages for staff and user accounts
+My part: I contributed to the project's research and analysis and built the login and dashboard pages for the staff and user, and helped with the implementation of the database.
 
 ## The problem
 People and/or developers applying for building permits in San Jose can have difficulty in understanding correction letters because they contain technical planning and building terminology. Making it difficult for applicants like Alex, one of our personas, to understand what needs to be fixe before their application can move forward.
